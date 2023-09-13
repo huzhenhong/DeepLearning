@@ -204,7 +204,9 @@ def update_config(config, args):
     if args.accumulation_steps:
         config.TRAIN.ACCUMULATION_STEPS = args.accumulation_steps
     if args.amp_opt_level:
-        print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
+        print(
+            "[warning] Apex amp has been deprecated, please use pytorch amp instead!"
+        )
         if args.amp_opt_level == 'O0':
             config.AMP_ENABLE = False
     if args.disable_amp:

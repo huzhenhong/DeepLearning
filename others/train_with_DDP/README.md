@@ -29,9 +29,9 @@ Ring-Reduce梯度合并：各个进程独立计算梯度，每个进程将梯度
 - nnodes、node_rank与nproc_per_node： nnodes是指物理节点数量，node_rank是物理节点的序号；nproc_per_node是指每个物理节点上面进程的数量。
 - word size ： 全局（一个分布式任务）中，rank的数量。
 ```
-每个node包含16个GPU，且nproc_per_node=8，nnodes=3，机器的node_rank=5，请问word_size是多少？   
+每个node包含16个GPU，且nproc_per_node=8，nnodes=3，机器的node_rank=5，请问word_size是多少？
 
-答案：word_size = 3*8 = 24 
+答案：word_size = 3*8 = 24
 ```
 
 ## 启动方式

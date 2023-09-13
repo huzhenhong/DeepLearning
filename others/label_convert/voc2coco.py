@@ -95,13 +95,17 @@ def read_image_ids(image_sets_file):
 
 
 def parseXmlFilse(data_dir, json_save_path, split='train'):
-    assert os.path.exists(data_dir), "data path:{} does not exist".format(data_dir)
+    assert os.path.exists(data_dir), "data path:{} does not exist".format(
+        data_dir
+    )
     labelfile = split + ".txt"
     image_sets_file = os.path.join(data_dir, "ImageSets", "Main", labelfile)
     xml_files_list = []
     if os.path.isfile(image_sets_file):
         ids = read_image_ids(image_sets_file)
-        xml_files_list = [os.path.join(data_dir, "Annotations", f"{i}.xml") for i in ids]
+        xml_files_list = [
+            os.path.join(data_dir, "Annotations", f"{i}.xml") for i in ids
+        ]
     elif os.path.isdir(data_dir):
         # 修改此处xml的路径即可
         # xml_dir = os.path.join(data_dir,"labels/voc")
@@ -122,7 +126,11 @@ def parseXmlFilse(data_dir, json_save_path, split='train'):
         size['height'] = None
 
         if root.tag != 'annotation':
-            raise Exception('pascal voc xml root element should be annotation, rather than {}'.format(root.tag))
+            raise Exception(
+                'pascal voc xml root element should be annotation, rather than {}'.format(
+                    root.tag
+                )
+            )
 
         # 提取图片名字
         file_name = root.findtext('filename')
@@ -134,10 +142,16 @@ def parseXmlFilse(data_dir, json_save_path, split='train'):
         for subelem in size_info[0]:
             size[subelem.tag] = int(subelem.text)
 
-        if file_name is not None and size['width'] is not None and file_name not in image_set:
+        if (
+            file_name is not None
+            and size['width'] is not None
+            and file_name not in image_set
+        ):
             # 添加coco['image'],返回当前图片ID
             current_image_id = addImgItem(file_name, size)
-            print('add image with name: {}\tand\tsize: {}'.format(file_name, size))
+            print(
+                'add image with name: {}\tand\tsize: {}'.format(file_name, size)
+            )
         elif file_name in image_set:
             raise Exception('file_name duplicated')
         else:
@@ -184,11 +198,14 @@ def parseXmlFilse(data_dir, json_save_path, split='train'):
                 bbox.append(bndbox['xmax'] - bndbox['xmin'])
                 # h
                 bbox.append(bndbox['ymax'] - bndbox['ymin'])
-                print('add annotation with object_name:{}\timage_id:{}\tcat_id:{}\tbbox:{}'.format(object_name,
-                                                                                                   current_image_id,
-                                                                                                   current_category_id,
-                                                                                                   bbox))
-                addAnnoItem(object_name, current_image_id, current_category_id, bbox)
+                print(
+                    'add annotation with object_name:{}\timage_id:{}\tcat_id:{}\tbbox:{}'.format(
+                        object_name, current_image_id, current_category_id, bbox
+                    )
+                )
+                addAnnoItem(
+                    object_name, current_image_id, current_category_id, bbox
+                )
 
     json_parent_dir = os.path.dirname(json_save_path)
     if not os.path.exists(json_parent_dir):
@@ -211,9 +228,23 @@ if __name__ == '__main__':
         split:主要用于voc2012查找xx.txt,如train.txt.如果用格式2，则不会用到该参数
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--voc-dir', type=str, default='data/label/voc', help='voc path')
-    parser.add_argument('-s', '--save-path', type=str, default='./data/convert/coco/train.json', help='json save path')
-    parser.add_argument('-t', '--type', type=str, default='train', help='only use in voc2012/2007')
+    parser.add_argument(
+        '-d', '--voc-dir', type=str, default='data/label/voc', help='voc path'
+    )
+    parser.add_argument(
+        '-s',
+        '--save-path',
+        type=str,
+        default='./data/convert/coco/train.json',
+        help='json save path',
+    )
+    parser.add_argument(
+        '-t',
+        '--type',
+        type=str,
+        default='train',
+        help='only use in voc2012/2007',
+    )
     opt = parser.parse_args()
     if len(sys.argv) > 1:
         print(opt)
@@ -223,4 +254,6 @@ if __name__ == '__main__':
         voc_data_dir = './data/labels/voc'
         json_save_path = './data/convert/coco/train.json'
         split = 'train'
-        parseXmlFilse(data_dir=voc_data_dir, json_save_path=json_save_path, split=split)
+        parseXmlFilse(
+            data_dir=voc_data_dir, json_save_path=json_save_path, split=split
+        )

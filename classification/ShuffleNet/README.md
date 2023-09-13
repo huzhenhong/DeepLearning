@@ -16,7 +16,7 @@
 - 单卡训练 参数详见config/train.yaml,同时你也可以通过命令行来覆盖掉train.yaml的参数
 
 ```
-python train.py --arch xx --data_path xx --classes xx --device 0 
+python train.py --arch xx --data_path xx --classes xx --device 0
 ```
 
 - 多卡训练 DDP
@@ -32,7 +32,7 @@ python -m torch.distributed.launch --nproc_per_node=2 --master_port 29501 train.
 # test 测模型精度
 
 ```
-python test.py --data xx mode xx --classes xx --weights xx --arch 
+python test.py --data xx mode xx --classes xx --weights xx --arch
 ```
 
 - data:val.txt的路径，比如data/val.txt,那么data=data.

@@ -55,7 +55,7 @@ pip install tensorrt-8.4.3.1-cp37-none-win_amd64.whl
 
 6. python api验证
 ```
-python -c "import tensorrt;print(tensorrt.__version__)" 
+python -c "import tensorrt;print(tensorrt.__version__)"
 ```
 
 执行上述指令，正确输出版本好即可。

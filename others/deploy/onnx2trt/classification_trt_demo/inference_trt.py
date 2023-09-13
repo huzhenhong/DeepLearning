@@ -22,8 +22,11 @@ def softmax(x):
 
 
 class TRTWrapper(torch.nn.Module):
-    def __init__(self, engine: Union[str, trt.ICudaEngine],
-                 output_names: Optional[Sequence[str]] = None) -> None:
+    def __init__(
+        self,
+        engine: Union[str, trt.ICudaEngine],
+        output_names: Optional[Sequence[str]] = None,
+    ) -> None:
         super().__init__()
         self.engine = engine
         if isinstance(self.engine, str):
@@ -50,13 +53,16 @@ class TRTWrapper(torch.nn.Module):
             # check if input shape is valid
             profile = self.engine.get_profile_shape(profile_id, input_name)
             assert input_tensor.dim() == len(
-                profile[0]), 'Input dim is different from engine profile.'
-            for s_min, s_input, s_max in zip(profile[0], input_tensor.shape,
-                                             profile[2]):
-                assert s_min <= s_input <= s_max, \
-                    'Input shape should be between ' \
-                    + f'{profile[0]} and {profile[2]}' \
+                profile[0]
+            ), 'Input dim is different from engine profile.'
+            for s_min, s_input, s_max in zip(
+                profile[0], input_tensor.shape, profile[2]
+            ):
+                assert s_min <= s_input <= s_max, (
+                    'Input shape should be between '
+                    + f'{profile[0]} and {profile[2]}'
                     + f' but get {tuple(input_tensor.shape)}.'
+                )
             idx = self.engine.get_binding_index(input_name)
 
             # All input tensors must be gpu variables
@@ -78,12 +84,18 @@ class TRTWrapper(torch.nn.Module):
             output = torch.empty(size=shape, dtype=dtype, device=device)
             outputs[output_name] = output
             bindings[idx] = output.data_ptr()
-        self.context.execute_async_v2(bindings,
-                                      torch.cuda.current_stream().cuda_stream)
+        self.context.execute_async_v2(
+            bindings, torch.cuda.current_stream().cuda_stream
+        )
         return outputs
 
 
-def data_preprocessing(file_path, size=(224, 224), mean=[0.406, 0.456, 0.485], std=[0.225, 0.224, 0.229]):
+def data_preprocessing(
+    file_path,
+    size=(224, 224),
+    mean=[0.406, 0.456, 0.485],
+    std=[0.225, 0.224, 0.229],
+):
     # H W C BGR
     img = cv2.imread(file_path)
     # RESIZE
@@ -93,7 +105,7 @@ def data_preprocessing(file_path, size=(224, 224), mean=[0.406, 0.456, 0.485], s
     # Normalization
     mean = np.array(mean).astype(np.float32)
     std = np.array(std).astype(np.float32)
-    img = (img / 255. - mean) / std
+    img = (img / 255.0 - mean) / std
     # B H W C
     img = np.expand_dims(img, axis=0)
     # B H W C -> B C H W
@@ -102,14 +114,14 @@ def data_preprocessing(file_path, size=(224, 224), mean=[0.406, 0.456, 0.485], s
 
 
 def inference(
-        engine,
-        data_source,
-        input_names='input',
-        output_names='output',
-        size=(224, 224),
-        mean=[0.406, 0.456, 0.485],
-        std=[0.225, 0.224, 0.229],
-        cal_fps=True
+    engine,
+    data_source,
+    input_names='input',
+    output_names='output',
+    size=(224, 224),
+    mean=[0.406, 0.456, 0.485],
+    std=[0.225, 0.224, 0.229],
+    cal_fps=True,
 ):
     # Device
     device = torch.device('cuda')
@@ -117,7 +129,9 @@ def inference(
     assert os.path.exists(engine)
     model = TRTWrapper(engine, [output_names])
     # Load img
-    assert os.path.exists(data_source), "data source: {} does not exists".format(data_source)
+    assert os.path.exists(
+        data_source
+    ), "data source: {} does not exists".format(data_source)
     if os.path.isdir(data_source):
         files = sorted(glob.glob(os.path.join(data_source, '*.*')))
     elif os.path.isfile(data_source):
@@ -136,7 +150,7 @@ def inference(
         if len(images) < num_warmup:
             images *= 100
 
-    for index, image_file in (enumerate(images)):
+    for index, image_file in enumerate(images):
         # torch.cuda.synchronize()
         image = data_preprocessing(image_file, size=size, mean=mean, std=std)
         input_shape = {input_names: torch.from_numpy(image).to(device)}
@@ -166,14 +180,16 @@ def inference(
                     f'Done image [{index + 1:<3}/ {len(images)}], '
                     f'fps: {fps:.1f} img / s, '
                     f'times per image: {1000 / fps:.1f} ms / img',
-                    flush=True)
+                    flush=True,
+                )
 
         if (index + 1) == len(images) and (index + 1) > num_warmup:
             fps = (index + 1 - num_warmup) / pure_inf_time
             print(
                 f'Overall fps: {fps:.1f} img / s, '
                 f'times per image: {1000 / fps:.1f} ms / img',
-                flush=True)
+                flush=True,
+            )
 
         print("time:{}".format(t2 - t1))
         # print(output)
@@ -181,9 +197,12 @@ def inference(
 
 def parser_args():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--engine', type=str, default='model.engine')
-    parser.add_argument('--data_source', type=str, default='goldfish_class_1.jpg')  # 测试数据源，可以是单张图片，可以是文件夹
+    parser.add_argument(
+        '--data_source', type=str, default='goldfish_class_1.jpg'
+    )  # 测试数据源，可以是单张图片，可以是文件夹
     parser.add_argument('--input_names', type=str, default='input')
     parser.add_argument('--output_names', type=str, default='output')
     parser.add_argument('--cal_fps', action='store_true', default=False)
@@ -205,6 +224,6 @@ if __name__ == '__main__':
         data_source=args.data_source,
         input_names=args.input_names,
         output_names=args.output_names,
-        size=(224,224),
-        cal_fps=args.cal_fps
+        size=(224, 224),
+        cal_fps=args.cal_fps,
     )

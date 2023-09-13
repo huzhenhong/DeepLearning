@@ -20,7 +20,13 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision
 from torchvision import transforms
 from torchvision.models import resnet50
-from torch.utils.data import DataLoader, Dataset, distributed, dataset, dataloader
+from torch.utils.data import (
+    DataLoader,
+    Dataset,
+    distributed,
+    dataset,
+    dataloader,
+)
 
 from utils import increment_path, torch_distributed_zero_first, reduce_value
 
@@ -48,7 +54,12 @@ def parser_args():
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--start_epochs', default=0)
     parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--device", type=str, default='', help="device = 'cpu' or '0' or '0,1,2,3'")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default='',
+        help="device = 'cpu' or '0' or '0,1,2,3'",
+    )
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument("--lrf", type=float, default=0.01)
     parser.add_argument('--weights', type=str, default='resnet50-19c8e357.pth')
@@ -84,8 +95,14 @@ def main(config):
 
     # Create logging
     if RANK in {-1, 0}:
-        save_dir = Path(str(increment_path(Path(config["train"]["project"]) / config["train"]["name"],
-                                           exist_ok=config["train"]["exist_ok"])))
+        save_dir = Path(
+            str(
+                increment_path(
+                    Path(config["train"]["project"]) / config["train"]["name"],
+                    exist_ok=config["train"]["exist_ok"],
+                )
+            )
+        )
         save_dir.mkdir(parents=True, exist_ok=True)
 
         weights_dir = save_dir / "weights"
@@ -97,56 +114,110 @@ def main(config):
             yaml.safe_dump(config, f, sort_keys=False)
 
         logging_path = str(save_dir / "train.log")
-        logging.basicConfig(filename=logging_path, level=logging.INFO, filemode="w+")
+        logging.basicConfig(
+            filename=logging_path, level=logging.INFO, filemode="w+"
+        )
         for k, v in config.items():
             logging.info(f"====>  {k}: {v}   <=====")
 
     # Init device
-    device = select_device(config["train"]["device"], config["train"]["batch_size"])
+    device = select_device(
+        config["train"]["device"], config["train"]["batch_size"]
+    )
     if LOCAL_RANK != -1:
-        assert torch.cuda.device_count() > LOCAL_RANK, 'insufficient CUDA devices for DDP command'
+        assert (
+            torch.cuda.device_count() > LOCAL_RANK
+        ), 'insufficient CUDA devices for DDP command'
         print("torch.cuda.device_count():", torch.cuda.device_count())
         torch.cuda.set_device(LOCAL_RANK)
         device = torch.device('cuda', LOCAL_RANK)
-        dist.init_process_group(backend="nccl" if dist.is_nccl_available() else "gloo")
+        dist.init_process_group(
+            backend="nccl" if dist.is_nccl_available() else "gloo"
+        )
 
     cuda = device.type != 'cpu'
 
     # Create data
     data_transform = {
         "train": transforms.Compose(
-            [transforms.RandomResizedCrop(224),
-             transforms.RandomHorizontalFlip(),
-             transforms.ToTensor(),
-             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
+            [
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                ),
+            ]
         ),
         "val": transforms.Compose(
-            [transforms.Resize(256),
-             transforms.CenterCrop(224),
-             transforms.ToTensor(),
-             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
-        )
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                ),
+            ]
+        ),
     }
 
     with torch_distributed_zero_first(LOCAL_RANK):
-        train_set = torchvision.datasets.CIFAR100(root=config["data"]["data_path"], train=True,
-                                                  transform=data_transform["train"], download=True)
-        test_set = torchvision.datasets.CIFAR100(root=config["data"]["data_path"], train=False,
-                                                 transform=data_transform["val"], download=True)
+        train_set = torchvision.datasets.CIFAR100(
+            root=config["data"]["data_path"],
+            train=True,
+            transform=data_transform["train"],
+            download=True,
+        )
+        test_set = torchvision.datasets.CIFAR100(
+            root=config["data"]["data_path"],
+            train=False,
+            transform=data_transform["val"],
+            download=True,
+        )
         # train_set.data = train_set.data[:1000]
         # test_set.data = test_set.data[:1000]
 
     nclass = len(train_set.classes)
     # print("nclass:", nclass)
-    train_sampler = None if LOCAL_RANK == -1 else distributed.DistributedSampler(train_set, shuffle=True)
-    test_sampler = None if LOCAL_RANK == -1 else distributed.DistributedSampler(test_set, shuffle=False)
+    train_sampler = (
+        None
+        if LOCAL_RANK == -1
+        else distributed.DistributedSampler(train_set, shuffle=True)
+    )
+    test_sampler = (
+        None
+        if LOCAL_RANK == -1
+        else distributed.DistributedSampler(test_set, shuffle=False)
+    )
 
-    nw = min([os.cpu_count(), config["train"]["batch_size"] if config["train"]["batch_size"] > 1 else 0, 8])
-    train_dataloader = DataLoader(train_set, batch_size=config["train"]["batch_size"], shuffle=train_sampler is None,
-                                  num_workers=nw, sampler=train_sampler, pin_memory=True, drop_last=True)
+    nw = min(
+        [
+            os.cpu_count(),
+            config["train"]["batch_size"]
+            if config["train"]["batch_size"] > 1
+            else 0,
+            8,
+        ]
+    )
+    train_dataloader = DataLoader(
+        train_set,
+        batch_size=config["train"]["batch_size"],
+        shuffle=train_sampler is None,
+        num_workers=nw,
+        sampler=train_sampler,
+        pin_memory=True,
+        drop_last=True,
+    )
 
-    test_dataloader = DataLoader(test_set, batch_size=config["train"]["batch_size"], shuffle=False,
-                                 num_workers=nw, sampler=test_sampler, pin_memory=True, drop_last=False)
+    test_dataloader = DataLoader(
+        test_set,
+        batch_size=config["train"]["batch_size"],
+        shuffle=False,
+        num_workers=nw,
+        sampler=test_sampler,
+        pin_memory=True,
+        drop_last=False,
+    )
     nb = len(train_dataloader)
     nwarmup = max(round(config["train"]["warmup_epochs"] * nb), 100)
 
@@ -160,15 +231,23 @@ def main(config):
     checkpoint_path = ""
     model = resnet50(pretrained=False, num_classes=nclass)
     # pretrain weights
-    if config["train"]["weights"] is not None and os.path.exists(config["train"]["weights"]):
+    if config["train"]["weights"] is not None and os.path.exists(
+        config["train"]["weights"]
+    ):
         with torch_distributed_zero_first(LOCAL_RANK):
             checkpoint_path = config["train"]["weights"]
 
         ckpt = torch.load(checkpoint_path, map_location='cpu')
-        ckpt_dict = {k: v for k, v in ckpt.items() if model.state_dict()[k].numel() == v.numel()}
+        ckpt_dict = {
+            k: v
+            for k, v in ckpt.items()
+            if model.state_dict()[k].numel() == v.numel()
+        }
         model.load_state_dict(ckpt_dict, strict=False)
     else:
-        checkpoint_path = os.path.join(tempfile.gettempdir(), "initial_weights.pt")
+        checkpoint_path = os.path.join(
+            tempfile.gettempdir(), "initial_weights.pt"
+        )
 
         if RANK == 0:
             torch.save(model.state_dict(), checkpoint_path)
@@ -192,22 +271,33 @@ def main(config):
 
     # Convert to DDP
     if cuda and RANK != -1:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[LOCAL_RANK], output_device=LOCAL_RANK)
+        model = torch.nn.parallel.DistributedDataParallel(
+            model, device_ids=[LOCAL_RANK], output_device=LOCAL_RANK
+        )
 
     # Optimizer
     # 学习率要根据并行GPU的数量进行倍增
-    lr = config["train"]["lr"] * WORLD_SIZE if RANK != -1 else config["train"]["lr"]
+    lr = (
+        config["train"]["lr"] * WORLD_SIZE
+        if RANK != -1
+        else config["train"]["lr"]
+    )
     pg = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(pg, lr=lr, momentum=0.9, weight_decay=5e-4)
     # Scheduler https://arxiv.org/pdf/1812.01187.pdf
-    lf = lambda x: ((1 + math.cos(x * math.pi / config["train"]["epochs"])) / 2) * (1 - config["train"]["lrf"]) + \
-                   config["train"]["lrf"]  # cosine
+    lf = (
+        lambda x: ((1 + math.cos(x * math.pi / config["train"]["epochs"])) / 2)
+        * (1 - config["train"]["lrf"])
+        + config["train"]["lrf"]
+    )  # cosine
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
     loss_function = torch.nn.CrossEntropyLoss()
 
     best_acc = 0
     # Train
-    for epoch in range(config["train"]["start_epochs"], config["train"]["epochs"]):
+    for epoch in range(
+        config["train"]["start_epochs"], config["train"]["epochs"]
+    ):
         model.train()
 
         if RANK != -1:
@@ -217,7 +307,9 @@ def main(config):
         logging.info(('%20s' * 3) % ('Train Epoch', 'gpu_mem', 'loss'))
 
         if RANK in {-1, 0}:
-            pbar = tqdm(pbar, total=nb, bar_format='{l_bar}{bar:10}{r_bar}{bar:-10}')
+            pbar = tqdm(
+                pbar, total=nb, bar_format='{l_bar}{bar:10}{r_bar}{bar:-10}'
+            )
 
         optimizer.zero_grad()
         mean_loss = torch.zeros(1).to(device)
@@ -255,9 +347,20 @@ def main(config):
             # Log
             if RANK in {-1, 0}:
                 mem = f'{torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0:.3g}G'  # (GB)
-                pbar.set_description(('epoch: %2s\t\t' + 'mem: %2s\t\t' + 'loss: %2.4g\t\t' + 'lr: %2f') %
-                                     (f'{epoch}/{config["train"]["epochs"] - 1}', mem, mean_loss.item(),
-                                      optimizer.param_groups[0]['lr']))
+                pbar.set_description(
+                    (
+                        'epoch: %2s\t\t'
+                        + 'mem: %2s\t\t'
+                        + 'loss: %2.4g\t\t'
+                        + 'lr: %2f'
+                    )
+                    % (
+                        f'{epoch}/{config["train"]["epochs"] - 1}',
+                        mem,
+                        mean_loss.item(),
+                        optimizer.param_groups[0]['lr'],
+                    )
+                )
 
         # 等待所有进程计算完毕
         if RANK != -1:
@@ -268,12 +371,18 @@ def main(config):
 
         # Test
         if RANK in {-1, 0}:
-            logging.info(('%20s' * 3) % (f'{epoch}', f'{mem}', f'{mean_loss.item():.3}'))
+            logging.info(
+                ('%20s' * 3) % (f'{epoch}', f'{mem}', f'{mean_loss.item():.3}')
+            )
             model.eval()
             sum_num = torch.zeros(1).to(device)
             pbar = enumerate(test_dataloader)
             # logging.info(('%10s' * 4) % ('Test', 'Epoch', 'gpu_mem', 'loss'))
-            pbar = tqdm(pbar, total=len(test_dataloader), bar_format='{l_bar}{bar:10}{r_bar}{bar:-10}')
+            pbar = tqdm(
+                pbar,
+                total=len(test_dataloader),
+                bar_format='{l_bar}{bar:10}{r_bar}{bar:-10}',
+            )
 
             with torch.no_grad():
                 for i, (imgs, targets) in pbar:
@@ -288,22 +397,43 @@ def main(config):
             tags = ["loss", "accuracy", "learning_rate"]
             tb_writer.add_scalar(tags[0], mean_loss, epoch)
             tb_writer.add_scalar(tags[1], acc, epoch)
-            tb_writer.add_scalar(tags[2], optimizer.param_groups[0]["lr"], epoch)
+            tb_writer.add_scalar(
+                tags[2], optimizer.param_groups[0]["lr"], epoch
+            )
             logging.info(('%20s' * 4) % ('Test Epoch', 'Loss', 'Acc', 'Lr'))
-            logging.info(('%20s' * 4) % (
-                f'{epoch}', f'{mean_loss.item():.3}', f'{acc.item():.3}', f'{optimizer.param_groups[0]["lr"]:.3}'))
+            logging.info(
+                ('%20s' * 4)
+                % (
+                    f'{epoch}',
+                    f'{mean_loss.item():.3}',
+                    f'{acc.item():.3}',
+                    f'{optimizer.param_groups[0]["lr"]:.3}',
+                )
+            )
 
             # Save model
             if RANK != -1:
                 if acc > best_acc:
                     best_acc = acc
-                    torch.save(model.module.state_dict(), os.path.join(weights_dir, "best.pth"))
-                torch.save(model.module.state_dict(), os.path.join(weights_dir, f"model_{epoch}.pth"))
+                    torch.save(
+                        model.module.state_dict(),
+                        os.path.join(weights_dir, "best.pth"),
+                    )
+                torch.save(
+                    model.module.state_dict(),
+                    os.path.join(weights_dir, f"model_{epoch}.pth"),
+                )
             else:
                 if acc > best_acc:
                     best_acc = acc
-                    torch.save(model.state_dict(), os.path.join(weights_dir, "best.pth"))
-                torch.save(model.state_dict(), os.path.join(weights_dir, f"model_{epoch}.pth"))
+                    torch.save(
+                        model.state_dict(),
+                        os.path.join(weights_dir, "best.pth"),
+                    )
+                torch.save(
+                    model.state_dict(),
+                    os.path.join(weights_dir, f"model_{epoch}.pth"),
+                )
 
     if WORLD_SIZE > 1 and RANK == 0:
         if os.path.exists(checkpoint_path):

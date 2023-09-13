@@ -8,11 +8,13 @@ def build_model(config):
     model_type = config.MODEL.TYPE
 
     if model_type == 'resnext':
-        model = ResNet(block=Bottleneck,
-                       layers=config.MODEL.RESNEXT.LAYERS,
-                       num_classes=config.MODEL.NUM_CLASSES,
-                       groups=config.MODEL.RESNEXT.GROUPS,
-                       width_per_group=config.MODEL.RESNEXT.WIDTH_PER_GROUP)
+        model = ResNet(
+            block=Bottleneck,
+            layers=config.MODEL.RESNEXT.LAYERS,
+            num_classes=config.MODEL.NUM_CLASSES,
+            groups=config.MODEL.RESNEXT.GROUPS,
+            width_per_group=config.MODEL.RESNEXT.WIDTH_PER_GROUP,
+        )
 
     else:
         raise NotImplementedError(f"Unkown model: {model_type}")

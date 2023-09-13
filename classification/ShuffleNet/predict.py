@@ -30,21 +30,26 @@ def time_sync():
 
 @torch.no_grad()
 def run(
-        arch='shufflenet_v1_g3',  # 网络名字
-        weights='best_model.pth',  # 模型路径
-        source='./data/test',  # 测试数据路径，可以是文件夹，可以是单张图片
-        use_cuda=True,  # 是否使用cuda
-        view_img=False,  # 是否可视化测试图片
-        save_txt=True,  # 是否将结果保存到txt
-        project='runs/result',  # 结果输出路径
-        class_indices='class_indices.json'  # json文件，存放类别和索引的关系。
+    arch='shufflenet_v1_g3',  # 网络名字
+    weights='best_model.pth',  # 模型路径
+    source='./data/test',  # 测试数据路径，可以是文件夹，可以是单张图片
+    use_cuda=True,  # 是否使用cuda
+    view_img=False,  # 是否可视化测试图片
+    save_txt=True,  # 是否将结果保存到txt
+    project='runs/result',  # 结果输出路径
+    class_indices='class_indices.json',  # json文件，存放类别和索引的关系。
 ):
-    device = torch.device("cuda" if torch.cuda.is_available() and use_cuda else "cpu")
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() and use_cuda else "cpu"
+    )
 
     data_transform = transforms.Compose(
-        [transforms.Resize((224, 224)),
-         transforms.ToTensor(),
-         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+        [
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
 
     if save_txt:
         if os.path.exists(project):
@@ -54,26 +59,34 @@ def run(
 
     # read class_indict
     json_path = class_indices
-    assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
+    assert os.path.exists(json_path), "file: '{}' dose not exist.".format(
+        json_path
+    )
 
     json_file = open(json_path, "r")
     class_indict = json.load(json_file)
     num_classes = len(class_indict)
 
     # load model
-    assert os.path.exists(weights), "model path: {} does not exists".format(weights)
+    assert os.path.exists(weights), "model path: {} does not exists".format(
+        weights
+    )
     assert arch in model_dict
     model_function = get_model(arch)
     model = model_function(num_classes=num_classes)
 
-    model.load_state_dict(torch.load(weights, map_location=device)["state_dict"], strict=True)
+    model.load_state_dict(
+        torch.load(weights, map_location=device)["state_dict"], strict=True
+    )
     model.eval().to(device)
 
     # run once
     y = model(torch.rand(1, 3, 224, 224).to(device))
 
     # load img
-    assert os.path.exists(source), "data source: {} does not exists".format(source)
+    assert os.path.exists(source), "data source: {} does not exists".format(
+        source
+    )
     if os.path.isdir(source):
         files = sorted(glob.glob(os.path.join(source, '*.*')))
     elif os.path.isfile(source):
@@ -106,14 +119,20 @@ def run(
         c = pred_class.cpu().numpy().item()
         prob = torch.squeeze(torch.softmax(pred, dim=1)).cpu().numpy()[int(c)]
         # print("name:{}\tclass: {}\tprob: {:.3}\tinference time: {:.5f}s Done.".format(img_path.split(os.sep)[-1],c, prob, (t2 - t1)))
-        print("class: {}\tprob: {:.3}\tinference time: {:.5f}s Done.".format(class_indict[str(c)], prob, (t2 - t1)))
+        print(
+            "class: {}\tprob: {:.3}\tinference time: {:.5f}s Done.".format(
+                class_indict[str(c)], prob, (t2 - t1)
+            )
+        )
 
         # 可视化图片
         if view_img:
             img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
             cv2.imshow("image", img)
             font = cv2.FONT_HERSHEY_SIMPLEX
-            cv2.putText(img, class_indict[str(c)], (14, 14), font, 1, (0, 0, 255), 3)
+            cv2.putText(
+                img, class_indict[str(c)], (14, 14), font, 1, (0, 0, 255), 3
+            )
             cv2.waitKey()
         if save_txt:
             file_name = img_path.split(os.sep)[-1]
@@ -126,13 +145,23 @@ def run(
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--arch', type=str, default='shufflenet_v1_g3')
-    parser.add_argument('--weights', type=str, default='model_best.pth', help='the model path')
-    parser.add_argument('--source', type=str, default='./data/test', help='test data path')
+    parser.add_argument(
+        '--weights', type=str, default='model_best.pth', help='the model path'
+    )
+    parser.add_argument(
+        '--source', type=str, default='./data/test', help='test data path'
+    )
     parser.add_argument('--use-cuda', type=bool, default=True)
     parser.add_argument('-v', '--view-img', action='store_true')
     parser.add_argument('-s', '--save-txt', action='store_true')
-    parser.add_argument('--project', type=str, default='runs/result', help='output path')
-    parser.add_argument('--class-indices', type=str, default='class_indices.json',
-                        help='when train,the file will generate')
+    parser.add_argument(
+        '--project', type=str, default='runs/result', help='output path'
+    )
+    parser.add_argument(
+        '--class-indices',
+        type=str,
+        default='class_indices.json',
+        help='when train,the file will generate',
+    )
     opt = parser.parse_args()
     run(**vars(opt))

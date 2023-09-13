@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+
 # from .utils import load_state_dict_from_url
 try:
     from torch.hub import load_state_dict_from_url
@@ -7,8 +8,15 @@ except ImportError:
     from torch.utils.model_zoo import load_url as load_state_dict_from_url
 
 __all__ = [
-    'VGG', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn',
-    'vgg19_bn', 'vgg19',
+    'VGG',
+    'vgg11',
+    'vgg11_bn',
+    'vgg13',
+    'vgg13_bn',
+    'vgg16',
+    'vgg16_bn',
+    'vgg19_bn',
+    'vgg19',
 ]
 
 
@@ -25,7 +33,6 @@ model_urls = {
 
 
 class VGG(nn.Module):
-
     def __init__(self, features, num_classes=1000, init_weights=True):
         super(VGG, self).__init__()
         self.features = features
@@ -52,7 +59,9 @@ class VGG(nn.Module):
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu'
+                )
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
@@ -81,9 +90,66 @@ def make_layers(cfg, batch_norm=False):
 
 cfgs = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+    'B': [
+        64,
+        64,
+        'M',
+        128,
+        128,
+        'M',
+        256,
+        256,
+        'M',
+        512,
+        512,
+        'M',
+        512,
+        512,
+        'M',
+    ],
+    'D': [
+        64,
+        64,
+        'M',
+        128,
+        128,
+        'M',
+        256,
+        256,
+        256,
+        'M',
+        512,
+        512,
+        512,
+        'M',
+        512,
+        512,
+        512,
+        'M',
+    ],
+    'E': [
+        64,
+        64,
+        'M',
+        128,
+        128,
+        'M',
+        256,
+        256,
+        256,
+        256,
+        'M',
+        512,
+        512,
+        512,
+        512,
+        'M',
+        512,
+        512,
+        512,
+        512,
+        'M',
+    ],
 }
 
 
@@ -92,8 +158,9 @@ def _vgg(arch, cfg, batch_norm, pretrained, progress, **kwargs):
         kwargs['init_weights'] = False
     model = VGG(make_layers(cfgs[cfg], batch_norm=batch_norm), **kwargs)
     if pretrained:
-        state_dict = load_state_dict_from_url(model_urls[arch],
-                                              progress=progress)
+        state_dict = load_state_dict_from_url(
+            model_urls[arch], progress=progress
+        )
         model.load_state_dict(state_dict)
     return model
 

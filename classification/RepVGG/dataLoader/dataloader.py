@@ -66,6 +66,3 @@ class My_Dataset_with_txt(Dataset):
         images = torch.stack(images, dim=0)
         labels = torch.as_tensor(labels)
         return images, labels
-
-
-

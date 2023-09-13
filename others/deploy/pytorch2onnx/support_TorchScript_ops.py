@@ -35,19 +35,26 @@ from torch.onnx import register_custom_op_symbolic
 from torch.onnx.symbolic_helper import parse_args
 
 
-@parse_args("v", "v", "v", "v", "v", "i", "i", "i", "i", "i", "i", "i", "i", "none")
-def symbolic(g,
-             input,
-             weight,
-             offset,
-             mask,
-             bias,
-             stride_h, stride_w,
-             pad_h, pad_w,
-             dil_h, dil_w,
-             n_weight_grps,
-             n_offset_grps,
-             use_mask):
+@parse_args(
+    "v", "v", "v", "v", "v", "i", "i", "i", "i", "i", "i", "i", "i", "none"
+)
+def symbolic(
+    g,
+    input,
+    weight,
+    offset,
+    mask,
+    bias,
+    stride_h,
+    stride_w,
+    pad_h,
+    pad_w,
+    dil_h,
+    dil_w,
+    n_weight_grps,
+    n_offset_grps,
+    use_mask,
+):
     return g.op("custom::deform_conv2d", input, offset)
 
 
@@ -70,6 +77,7 @@ def test():
     # 使用 np.allclose 来保证两个结果张量的误差在一个可以允许的范围内。一切正常的话，运行这段代码后，assert 所在行不会报错，程序应该没有任何输出。
     assert np.allclose(torch_output, ort_output)
     print("test succeed!")
+
 
 # if __name__ == '__main__':
 #     test()

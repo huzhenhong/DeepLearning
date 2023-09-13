@@ -2,10 +2,11 @@ import torch
 from torch.utils.data import Dataset
 from PIL import Image
 
+
 class My_Dataset(Dataset):
     """自定义数据集"""
 
-    def __init__(self,image_path,image_class,transform=None):
+    def __init__(self, image_path, image_class, transform=None):
         self.image_path = image_path
         self.image_class = image_class
         self.transform = transform
@@ -15,12 +16,12 @@ class My_Dataset(Dataset):
 
     def __getitem__(self, item):
         img = Image.open(self.image_path[item])
-        if img.mode!='RGB':
+        if img.mode != 'RGB':
             img = img.convert("RGB")
         label = self.image_class[item]
         if self.transform is not None:
             img = self.transform(img)
-        return img,label
+        return img, label
 
     @staticmethod
     def collate_fn(batch):

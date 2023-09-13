@@ -21,10 +21,16 @@ def init_distributed_mode(args):
 
     torch.cuda.set_device(args.gpu)
     args.dist_backend = 'nccl'  # 通信后端，nvidia GPU推荐使用NCCL
-    print('| distributed init (rank {}): {}'.format(
-        args.rank, args.dist_url), flush=True)
-    dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
-                            world_size=args.world_size, rank=args.rank)
+    print(
+        '| distributed init (rank {}): {}'.format(args.rank, args.dist_url),
+        flush=True,
+    )
+    dist.init_process_group(
+        backend=args.dist_backend,
+        init_method=args.dist_url,
+        world_size=args.world_size,
+        rank=args.rank,
+    )
     dist.barrier()
 
 
@@ -68,6 +74,7 @@ def is_main_process():
 #             value /= world_size
 #
 #         return value
+
 
 def reduce_value(value, world_size, average=True):
     with torch.no_grad():

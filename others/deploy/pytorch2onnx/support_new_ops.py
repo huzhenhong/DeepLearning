@@ -22,24 +22,24 @@ ONNX新算子实现
 """
 
 1.新建一个“my_add.cpp”
-2. 
+2.
 
-// my_add.cpp 
- 
-#include <torch/torch.h> 
- 
-torch::Tensor my_add(torch::Tensor a, torch::Tensor b) 
-{ 
-    return 3 * a + 2* b; 
-} 
+// my_add.cpp
+
+#include <torch/torch.h>
+
+torch::Tensor my_add(torch::Tensor a, torch::Tensor b)
+{
+    return 3 * a + 2* b;
+}
 
 // PYBIND11_MODULE:为C++函数提供python调用接口。这里my_lib是未来在Python里导入的模块名
 // 双引号中的 “my_add”是python调用的接口名称。这里是与c++函数的名称对齐
 
-PYBIND11_MODULE(my_lib, m) 
-{ 
-    m.def("my_add", my_add); 
-} 
+PYBIND11_MODULE(my_lib, m)
+{
+    m.def("my_add", my_add);
+}
 """
 
 # 第二步：编写setup.py ，来编译刚刚的c++文件
@@ -50,16 +50,16 @@ PYBIND11_MODULE(my_lib, m)
 
 # 使用setuotools的编译功能
 from setuptools import setup
-# 使用Pytorch中C++扩展根据函数 
-from torch.utils import cpp_extension 
- 
+# 使用Pytorch中C++扩展根据函数
+from torch.utils import cpp_extension
+
 setup(
       # name:生成的对外的接口名字
-      name='my_add', 
+      name='my_add',
       # my_lib:模块名字 my_add.cpp：模块对应的源文件
-      ext_modules=[cpp_extension.CppExtension('my_lib', ['my_add.cpp'])], 
+      ext_modules=[cpp_extension.CppExtension('my_lib', ['my_add.cpp'])],
       cmdclass={'build_ext': cpp_extension.BuildExtension}
-      ) 
+      )
 
 3.在命令行，执行 python setup.py 自动编译C++代码
 """

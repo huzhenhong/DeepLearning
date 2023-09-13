@@ -26,7 +26,9 @@ def matplotlib_imshow(img, one_channel=False):
         return norm_image, fig
 
 
-def train_one_epoch(model, data_loader, device, optimizer, loss_function, epoch):
+def train_one_epoch(
+    model, data_loader, device, optimizer, loss_function, epoch
+):
     model.train()
     accu_loss = torch.zeros(1).to(device)
     accu_num = torch.zeros(1).to(device)
@@ -48,8 +50,13 @@ def train_one_epoch(model, data_loader, device, optimizer, loss_function, epoch)
 
         print(
             "train epoch {} step {} train loss: {:.5f} train acc: {:.5f} lr: {:.7f}".format(
-                epoch, step + 1, accu_loss.item() / (step + 1), accu_num.item() / sample_num,
-                optimizer.param_groups[0]["lr"]))
+                epoch,
+                step + 1,
+                accu_loss.item() / (step + 1),
+                accu_num.item() / sample_num,
+                optimizer.param_groups[0]["lr"],
+            )
+        )
         if not torch.isfinite(loss):
             print('WARNING: non-finite loss, ending training ', loss)
             sys.exit(1)
@@ -80,7 +87,12 @@ def evaluate(model, data_loader, device, loss_function, epoch):
         loss = loss_function(pred, labels.to(device))
         accu_loss += loss
 
-        print("[valid epoch {} step {}] val loss: {:.5f}, val acc: {:.5f}".format(epoch, step + 1,
-                                                                                  accu_loss.item() / (step + 1),
-                                                                                  accu_num.item() / sample_num))
+        print(
+            "[valid epoch {} step {}] val loss: {:.5f}, val acc: {:.5f}".format(
+                epoch,
+                step + 1,
+                accu_loss.item() / (step + 1),
+                accu_num.item() / sample_num,
+            )
+        )
     return accu_loss.item() / (step + 1), accu_num.item() / sample_num

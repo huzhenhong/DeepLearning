@@ -9,6 +9,7 @@ images_nums = 0
 category_nums = 0
 bbox_nums = 0
 
+
 # 将类别名字和id建立索引
 def catid2name(coco):
     classes = dict()
@@ -68,8 +69,8 @@ def load_coco(anno_file, xml_save_path):
             object_name = classes[ann['category_id']]
             # bbox:[x,y,w,h]
             bbox = list(map(float, ann['bbox']))
-            xc = bbox[0] + bbox[2] / 2.
-            yc = bbox[1] + bbox[3] / 2.
+            xc = bbox[0] + bbox[2] / 2.0
+            yc = bbox[1] + bbox[3] / 2.0
             w = bbox[2]
             h = bbox[3]
             obj = [ann['category_id'], xc, yc, w, h]
@@ -79,12 +80,16 @@ def load_coco(anno_file, xml_save_path):
 
 
 def parseJsonFile(json_path, txt_save_path):
-    assert os.path.exists(json_path), "json path:{} does not exists".format(json_path)
+    assert os.path.exists(json_path), "json path:{} does not exists".format(
+        json_path
+    )
     if os.path.exists(txt_save_path):
         shutil.rmtree(txt_save_path)
     os.makedirs(txt_save_path)
 
-    assert json_path.endswith('json'), "json file:{} It is not json file!".format(json_path)
+    assert json_path.endswith(
+        'json'
+    ), "json file:{} It is not json file!".format(json_path)
 
     load_coco(json_path, txt_save_path)
 
@@ -98,8 +103,20 @@ if __name__ == '__main__':
         txt_save_path:txt保存的路径
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-jp', '--json-path', type=str, default='./data/labels/coco/train.json', help='json path')
-    parser.add_argument('-s', '--save-path', type=str, default='./data/convert/yolo', help='txt save path')
+    parser.add_argument(
+        '-jp',
+        '--json-path',
+        type=str,
+        default='./data/labels/coco/train.json',
+        help='json path',
+    )
+    parser.add_argument(
+        '-s',
+        '--save-path',
+        type=str,
+        default='./data/convert/yolo',
+        help='txt save path',
+    )
     opt = parser.parse_args()
 
     if len(sys.argv) > 1:
@@ -109,8 +126,8 @@ if __name__ == '__main__':
         # print("category nums: {}".format(category_nums))
         # print("bbox nums: {}".format(bbox_nums))
     else:
-        json_path = './data/labels/coco/train.json'  # r'D:\practice\compete\goodsDec\data\train\train.json'
-        txt_save_path = './data/convert/yolo'
+        json_path = '/Users/huzh/Documents/数据集/Objects365-2019-zip/Annotations/val/val.json'  # r'D:\practice\compete\goodsDec\data\train\train.json'
+        txt_save_path = '/Users/huzh/Documents/数据集/Objects365-2019/labels/val'
         parseJsonFile(json_path, txt_save_path)
         # print("image nums: {}".format(images_nums))
         # print("category nums: {}".format(category_nums))

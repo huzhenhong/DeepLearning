@@ -17,8 +17,12 @@ import numpy as np
         >>> # Activating the module
         >>> output = m(input)
 """
-sample1 = torch.tensor([[[1, 1], [1, 2]], [[-1, 1], [0, 1]]], dtype=torch.float32)
-sample2 = torch.tensor([[[0, -1], [2, 2]], [[0, -1], [3, 1]]], dtype=torch.float32)
+sample1 = torch.tensor(
+    [[[1, 1], [1, 2]], [[-1, 1], [0, 1]]], dtype=torch.float32
+)
+sample2 = torch.tensor(
+    [[[0, -1], [2, 2]], [[0, -1], [3, 1]]], dtype=torch.float32
+)
 gn = nn.GroupNorm(2, 2)
 output1 = gn(sample1.unsqueeze(0))
 output2 = gn(sample2.unsqueeze(0))
@@ -31,7 +35,9 @@ in_output2 = IN(sample2.unsqueeze(0))
 
 mean = np.mean(sample1.numpy(), axis=(1, 2))
 var = np.var(sample1.numpy(), axis=(1, 2))
-output3 = (sample1.numpy() - mean[:, None, None]) / np.sqrt(var[:, None, None] + 1e-5)
+output3 = (sample1.numpy() - mean[:, None, None]) / np.sqrt(
+    var[:, None, None] + 1e-5
+)
 print(mean)
 print(var)
 print(output3)

@@ -5,14 +5,31 @@ from models.se_module import SELayer
 
 
 def conv3x3(in_planes, out_planes, stride=1):
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes,
+        out_planes,
+        kernel_size=3,
+        stride=stride,
+        padding=1,
+        bias=False,
+    )
 
 
 class SEBasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1, base_width=64, dilation=1,
-                 norm_layer=None, reduction=16):
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        stride=1,
+        downsample=None,
+        groups=1,
+        base_width=64,
+        dilation=1,
+        norm_layer=None,
+        reduction=16,
+    ):
         super(SEBasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -45,15 +62,31 @@ class SEBasicBlock(nn.Module):
 class SEBottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1, base_width=64, dilation=1,
-                 norm_layer=None, reduction=16):
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        stride=1,
+        downsample=None,
+        groups=1,
+        base_width=64,
+        dilation=1,
+        norm_layer=None,
+        reduction=16,
+    ):
         super(SEBottleneck, self).__init__()
 
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv1 = nn.Conv2d(
+            inplanes, planes, kernel_size=1, stride=1, padding=0, bias=False
+        )
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.conv2 = nn.Conv2d(
+            planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+        )
         self.bn2 = nn.BatchNorm2d(planes)
-        self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv3 = nn.Conv2d(
+            planes, planes * 4, kernel_size=1, stride=1, padding=0, bias=False
+        )
         self.bn3 = nn.BatchNorm2d(planes * 4)
         self.relu = nn.ReLU(inplace=True)
         self.se = SELayer(planes * 4, reduction)
@@ -110,8 +143,11 @@ def se_resnet50(num_classes=1000, pretrained=False):
     """
     model = ResNet(SEBottleneck, [3, 4, 6, 3], num_classes=num_classes)
     if pretrained:
-        model.load_state_dict(load_state_dict_from_url(
-            "https://github.com/moskomule/senet.pytorch/releases/download/archive/seresnet50-60a8950a85b2b.pkl"))
+        model.load_state_dict(
+            load_state_dict_from_url(
+                "https://github.com/moskomule/senet.pytorch/releases/download/archive/seresnet50-60a8950a85b2b.pkl"
+            )
+        )
 
     return model
 
@@ -135,20 +171,25 @@ def se_resnet152(num_classes=1_000):
     # model.avgpool = nn.AdaptiveAvgPool2d(1)
     return model
 
+
 class CifarSEResNet(nn.Module):
     def __init__(self, block, n_size, num_classes=10, reduction=16):
         super(CifarSEResNet, self).__init__()
         self.inplane = 16
         self.conv1 = nn.Conv2d(
-            3, self.inplane, kernel_size=3, stride=1, padding=1, bias=False)
+            3, self.inplane, kernel_size=3, stride=1, padding=1, bias=False
+        )
         self.bn1 = nn.BatchNorm2d(self.inplane)
         self.relu = nn.ReLU(inplace=True)
         self.layer1 = self._make_layer(
-            block, 16, blocks=n_size, stride=1, reduction=reduction)
+            block, 16, blocks=n_size, stride=1, reduction=reduction
+        )
         self.layer2 = self._make_layer(
-            block, 32, blocks=n_size, stride=2, reduction=reduction)
+            block, 32, blocks=n_size, stride=2, reduction=reduction
+        )
         self.layer3 = self._make_layer(
-            block, 64, blocks=n_size, stride=2, reduction=reduction)
+            block, 64, blocks=n_size, stride=2, reduction=reduction
+        )
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Linear(64, num_classes)
         self.initialize()
@@ -189,7 +230,8 @@ class CifarSEResNet(nn.Module):
 class CifarSEPreActResNet(CifarSEResNet):
     def __init__(self, block, n_size, num_classes=1000, reduction=16):
         super(CifarSEPreActResNet, self).__init__(
-            block, n_size, num_classes, reduction)
+            block, n_size, num_classes, reduction
+        )
         self.bn1 = nn.BatchNorm2d(self.inplane)
         self.initialize()
 
@@ -218,8 +260,12 @@ class CifarSEBasicBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes)
         self.se = SELayer(planes, reduction)
         if inplanes != planes:
-            self.downsample = nn.Sequential(nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False),
-                                            nn.BatchNorm2d(planes))
+            self.downsample = nn.Sequential(
+                nn.Conv2d(
+                    inplanes, planes, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(planes),
+            )
         else:
             self.downsample = lambda x: x
         self.stride = stride
@@ -239,46 +285,42 @@ class CifarSEBasicBlock(nn.Module):
 
         return out
 
+
 def se_resnet20(**kwargs):
-    """Constructs a ResNet-18 model.
-    """
+    """Constructs a ResNet-18 model."""
     model = CifarSEResNet(CifarSEBasicBlock, 3, **kwargs)
     return model
 
 
 def se_resnet32(**kwargs):
-    """Constructs a ResNet-34 model.
-    """
+    """Constructs a ResNet-34 model."""
     model = CifarSEResNet(CifarSEBasicBlock, 5, **kwargs)
     return model
 
 
 def se_resnet56(**kwargs):
-    """Constructs a ResNet-34 model.
-    """
+    """Constructs a ResNet-34 model."""
     model = CifarSEResNet(CifarSEBasicBlock, 9, **kwargs)
     return model
 
 
 def se_preactresnet20(**kwargs):
-    """Constructs a ResNet-18 model.
-    """
+    """Constructs a ResNet-18 model."""
     model = CifarSEPreActResNet(CifarSEBasicBlock, 3, **kwargs)
     return model
 
 
 def se_preactresnet32(**kwargs):
-    """Constructs a ResNet-34 model.
-    """
+    """Constructs a ResNet-34 model."""
     model = CifarSEPreActResNet(CifarSEBasicBlock, 5, **kwargs)
     return model
 
 
 def se_preactresnet56(**kwargs):
-    """Constructs a ResNet-34 model.
-    """
+    """Constructs a ResNet-34 model."""
     model = CifarSEPreActResNet(CifarSEBasicBlock, 9, **kwargs)
     return model
+
 
 if __name__ == '__main__':
     from torchsummary import summary
@@ -289,7 +331,6 @@ if __name__ == '__main__':
     model = se_resnet50().to(device)
     out = model(img)
     summary(model, input_size=(3, 224, 224))
-
 
     def count_parameters(model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)

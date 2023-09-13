@@ -19,9 +19,13 @@ import numpy as np
         >>> # Activating the module
         >>> output = m(input)
 """
-sample1 = torch.tensor([[[1, 1], [1, 2]], [[-1, 1], [0, 1]]],dtype=torch.float32)
-sample2 = torch.tensor([[[0, -1], [2, 2]], [[0, -1], [3, 1]]],dtype=torch.float32)
-ln = nn.LayerNorm([2,2,2],elementwise_affine=False)
+sample1 = torch.tensor(
+    [[[1, 1], [1, 2]], [[-1, 1], [0, 1]]], dtype=torch.float32
+)
+sample2 = torch.tensor(
+    [[[0, -1], [2, 2]], [[0, -1], [3, 1]]], dtype=torch.float32
+)
+ln = nn.LayerNorm([2, 2, 2], elementwise_affine=False)
 output1 = ln(sample1)
 output2 = ln(sample2)
 print(output1)
@@ -29,8 +33,7 @@ print(output1)
 
 mean = np.mean(sample1.numpy())
 var = np.var(sample1.numpy())
-output3 = (sample1.numpy()-mean)/np.sqrt(var+1e-5)
+output3 = (sample1.numpy() - mean) / np.sqrt(var + 1e-5)
 print(mean)
 print(var)
 print(output3)
-

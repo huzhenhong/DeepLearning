@@ -7,7 +7,9 @@ def pt_to_onnx():
     # input
     dummy_input = torch.randn(10, 3, 224, 224, device="cuda")
     model = torchvision.models.alexnet(pretrained=False)
-    model.load_state_dict(torch.load("alexnet-owt-7be5be79.pth", map_location='cpu'), strict=True)
+    model.load_state_dict(
+        torch.load("alexnet-owt-7be5be79.pth", map_location='cpu'), strict=True
+    )
     model.cuda()
 
     input_names = ["actual_input_1"] + ["learned_%d" % i for i in range(16)]
@@ -25,7 +27,6 @@ def pt_to_onnx():
         # training=TrainingMode.EVA # (enum, default TrainingMode.EVAL) 以推理模式导出模型。
         # opset_version (int, default 9) # 默认是9。值必须等于_onnx_main_opset或在_onnx_stable_opsets之内。具体可在torch/onnx/symbolic_helper.py中找到
         # dynamic_axes (dict<string, dict<python:int, string>> or dict<string, list(int)>, default empty dict) KEY(str) - 必须是input_names或output_names指定的名称，用来指定哪个变量需要使用到动态尺寸。
-
     )
 
 
@@ -49,7 +50,10 @@ def eval_onnxruntime():
 
     ort_session = ort.InferenceSession("alexnet.onnx")
 
-    outputs = ort_session.run(None, {"actual_input_1": np.random.randn(10, 3, 224, 224).astype(np.float32)})
+    outputs = ort_session.run(
+        None,
+        {"actual_input_1": np.random.randn(10, 3, 224, 224).astype(np.float32)},
+    )
 
     print(outputs[0])
     print(outputs[0].shape)

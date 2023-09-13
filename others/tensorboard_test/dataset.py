@@ -3,15 +3,16 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset
 
+
 class DataSet(Dataset):
-    def __init__(self, data:dict, transform=None):
+    def __init__(self, data: dict, transform=None):
         self.transform = transform
         self.images_path = []
         self.images_label = []
 
         for key, value in data.items():
             self.images_path.extend(value)
-            self.images_label.extend([int(key)]*len(value))
+            self.images_label.extend([int(key)] * len(value))
         assert len(self.images_path) == len(self.images_label)
 
         delete_img = []
@@ -34,7 +35,9 @@ class DataSet(Dataset):
         img = Image.open(self.images_path[item])
         # RGB为彩色图片，L为灰度图片
         if img.mode != 'RGB':
-            raise ValueError("image: {} isn't RGB mode.".format(self.images_path[item]))
+            raise ValueError(
+                "image: {} isn't RGB mode.".format(self.images_path[item])
+            )
         # img = img.convert("RGB")
         label = self.images_label[item]
 
@@ -55,11 +58,15 @@ class DataSet(Dataset):
 
 
 if __name__ == '__main__':
-    a ={
-        "0":[1,2,3,4],
-        "1":[4,8,6,]
+    a = {
+        "0": [1, 2, 3, 4],
+        "1": [
+            4,
+            8,
+            6,
+        ],
     }
-    images_path  = []
+    images_path = []
     images_label = []
     for key, value in a.items():
         images_path.extend(value)

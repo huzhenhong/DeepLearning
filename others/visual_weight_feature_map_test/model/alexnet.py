@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+
 # from .utils import load_state_dict_from_url
 try:
     from torch.hub import load_state_dict_from_url
@@ -15,7 +16,6 @@ model_urls = {
 
 
 class AlexNet(nn.Module):
-
     def __init__(self, num_classes=1000):
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
@@ -58,7 +58,6 @@ class AlexNet(nn.Module):
         return output
 
 
-
 def alexnet(pretrained=False, progress=True, **kwargs):
     r"""AlexNet model architecture from the
     `"One weird trick..." <https://arxiv.org/abs/1404.5997>`_ paper.
@@ -69,7 +68,8 @@ def alexnet(pretrained=False, progress=True, **kwargs):
     """
     model = AlexNet(**kwargs)
     if pretrained:
-        state_dict = load_state_dict_from_url(model_urls['alexnet'],
-                                              progress=progress)
+        state_dict = load_state_dict_from_url(
+            model_urls['alexnet'], progress=progress
+        )
         model.load_state_dict(state_dict)
     return model

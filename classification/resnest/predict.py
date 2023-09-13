@@ -28,22 +28,25 @@ def time_sync():
 
 @torch.no_grad()
 def run(
-        config,  # 配置文件
-        img_size=224,  # 模型输入大小
-        weights='best_model.pth',  # 模型路径
-        source='./data/test',  # 测试数据路径，可以是文件夹，可以是单张图片
-        device='',  # 指定GPU
-        view_img=False,  # 是否可视化测试图片
-        save_txt=True,  # 是否将结果保存到txt
-        project='runs/result',  # 结果输出路径
-        class_indices='class_indices.json'  # json文件，存放类别和索引的关系。
+    config,  # 配置文件
+    img_size=224,  # 模型输入大小
+    weights='best_model.pth',  # 模型路径
+    source='./data/test',  # 测试数据路径，可以是文件夹，可以是单张图片
+    device='',  # 指定GPU
+    view_img=False,  # 是否可视化测试图片
+    save_txt=True,  # 是否将结果保存到txt
+    project='runs/result',  # 结果输出路径
+    class_indices='class_indices.json',  # json文件，存放类别和索引的关系。
 ):
     device = select_device(device)
 
     data_transform = transforms.Compose(
-        [transforms.Resize((img_size, img_size)),
-         transforms.ToTensor(),
-         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+        [
+            transforms.Resize((img_size, img_size)),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
 
     if save_txt:
         if os.path.exists(project):
@@ -53,14 +56,18 @@ def run(
 
     # read class_indict
     json_path = class_indices
-    assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
+    assert os.path.exists(json_path), "file: '{}' dose not exist.".format(
+        json_path
+    )
 
     json_file = open(json_path, "r")
     class_indict = json.load(json_file)
     num_classes = len(class_indict)
 
     # load model
-    assert os.path.exists(weights), "model path: {} does not exists".format(weights)
+    assert os.path.exists(weights), "model path: {} does not exists".format(
+        weights
+    )
     model = build_model(config)
     if save_txt:
         f.write(str(model) + '\n')
@@ -77,8 +84,13 @@ def run(
     model_without_ddp = model
 
     if save_txt:
-        f.write(f"==============> Loading weight {weights} for predicting......" + '\n')
-    model.load_state_dict(torch.load(weights, map_location=device)["model"], strict=False)
+        f.write(
+            f"==============> Loading weight {weights} for predicting......"
+            + '\n'
+        )
+    model.load_state_dict(
+        torch.load(weights, map_location=device)["model"], strict=False
+    )
     model.eval().to(device)
 
     if save_txt:
@@ -88,7 +100,9 @@ def run(
     y = model(torch.rand(1, 3, 224, 224).to(device))
 
     # load img
-    assert os.path.exists(source), "data source: {} does not exists".format(source)
+    assert os.path.exists(source), "data source: {} does not exists".format(
+        source
+    )
     if os.path.isdir(source):
         files = sorted(glob.glob(os.path.join(source, '*.*')))
     elif os.path.isfile(source):
@@ -121,14 +135,20 @@ def run(
         c = pred_class.cpu().numpy().item()
         prob = torch.squeeze(torch.softmax(pred, dim=1)).cpu().numpy()[int(c)]
         # print("name:{}\tclass: {}\tprob: {:.3}\tinference time: {:.5f}s Done.".format(img_path.split(os.sep)[-1],c, prob, (t2 - t1)))
-        print("class: {}\tprob: {:.3}\tinference time: {:.5f}s Done.".format(class_indict[str(c)], prob, (t2 - t1)))
+        print(
+            "class: {}\tprob: {:.3}\tinference time: {:.5f}s Done.".format(
+                class_indict[str(c)], prob, (t2 - t1)
+            )
+        )
 
         # 可视化图片
         if view_img:
             img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
             cv2.imshow("image", img)
             font = cv2.FONT_HERSHEY_SIMPLEX
-            cv2.putText(img, class_indict[str(c)], (14, 14), font, 1, (0, 0, 255), 3)
+            cv2.putText(
+                img, class_indict[str(c)], (14, 14), font, 1, (0, 0, 255), 3
+            )
             cv2.waitKey()
         if save_txt:
             file_name = img_path.split(os.sep)[-1]
@@ -140,17 +160,40 @@ def run(
 
 def parse_option():
     parser = argparse.ArgumentParser('ResNeSt predict script', add_help=False)
-    parser.add_argument('--cfg', type=str, required=True, metavar="FILE", help='path to config file', )
-    parser.add_argument('--img-size', type=int, default=224, help='input img size')
+    parser.add_argument(
+        '--cfg',
+        type=str,
+        required=True,
+        metavar="FILE",
+        help='path to config file',
+    )
+    parser.add_argument(
+        '--img-size', type=int, default=224, help='input img size'
+    )
     parser.add_argument('--num-classes', type=int, default=1000, help='classes')
-    parser.add_argument('--weights', type=str, default='model_best.pth', help='the model path')
-    parser.add_argument('--source', type=str, default='./data/test', help='test data path')
-    parser.add_argument('--device', type=str, default='', help="device = 'cpu' or '0' or '0,1,2,3'")
+    parser.add_argument(
+        '--weights', type=str, default='model_best.pth', help='the model path'
+    )
+    parser.add_argument(
+        '--source', type=str, default='./data/test', help='test data path'
+    )
+    parser.add_argument(
+        '--device',
+        type=str,
+        default='',
+        help="device = 'cpu' or '0' or '0,1,2,3'",
+    )
     parser.add_argument('-v', '--view-img', action='store_true')
     parser.add_argument('-s', '--save-txt', action='store_true')
-    parser.add_argument('--project', type=str, default='runs/result', help='output path')
-    parser.add_argument('--class-indices', type=str, default='class_indices.json',
-                        help='when train,the file will generate')
+    parser.add_argument(
+        '--project', type=str, default='runs/result', help='output path'
+    )
+    parser.add_argument(
+        '--class-indices',
+        type=str,
+        default='class_indices.json',
+        help='when train,the file will generate',
+    )
 
     args, unparsed = parser.parse_known_args()
 
@@ -170,5 +213,5 @@ if __name__ == '__main__':
         view_img=args.view_img,  # 是否可视化测试图片
         save_txt=args.save_txt,  # 是否将结果保存到txt
         project=args.project,  # 结果输出路径
-        class_indices='class_indices.json'  # json文件，存放类别和索引的关系。
+        class_indices='class_indices.json',  # json文件，存放类别和索引的关系。
     )

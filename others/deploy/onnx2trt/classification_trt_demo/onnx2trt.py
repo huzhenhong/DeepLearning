@@ -204,21 +204,21 @@ def onnx2trt(onnx_model, save_file, input_shapes, fp16=True, device_id=0):
 if __name__ == '__main__':
     """
     #生成静态batchsize的engine
-    ./trtexec 	--onnx=<onnx_file> \ 						
-                --explicitBatch \ 						
-                --saveEngine=<tensorRT_engine_file> \ 		
-                --workspace=<size_in_megabytes> \ 		
-                --fp16 		
-                								
+    ./trtexec 	--onnx=<onnx_file> \
+                --explicitBatch \
+                --saveEngine=<tensorRT_engine_file> \
+                --workspace=<size_in_megabytes> \
+                --fp16
+
     #生成动态batchsize的engine
-    ./trtexec 	--onnx=<onnx_file> \					
-                --minShapes=input:<shape_of_min_batch> \ 
-                --optShapes=input:<shape_of_opt_batch> \  	
-                --maxShapes=input:<shape_of_max_batch> \ 	
-                --workspace=<size_in_megabytes> \ 			
-                --saveEngine=<engine_file> \   				
-                --fp16   	
-                
+    ./trtexec 	--onnx=<onnx_file> \
+                --minShapes=input:<shape_of_min_batch> \
+                --optShapes=input:<shape_of_opt_batch> \
+                --maxShapes=input:<shape_of_max_batch> \
+                --workspace=<size_in_megabytes> \
+                --saveEngine=<engine_file> \
+                --fp16
+
     trtexec --onnx=xx.onnx --minShapes=input:1x3x224x224 --optShapes=input:4x3x224x224 --maxShapes=input:8x3x224x224 --saveEngine=xx.engine --fp16
     """
 

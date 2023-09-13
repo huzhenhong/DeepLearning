@@ -9,7 +9,7 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 from utils import accuracy, ProgressMeter, AverageMeter
-from models import model_dict,get_model
+from models import model_dict, get_model
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from dataLoader import My_Dataset_with_txt
@@ -17,18 +17,43 @@ from dataLoader import My_Dataset_with_txt
 
 def parser_args():
     parser = argparse.ArgumentParser(description='PyTorch ImageNet Test')
-    parser.add_argument('--data', metavar='DIR', help='path to dataset',required=True)
+    parser.add_argument(
+        '--data', metavar='DIR', help='path to dataset', required=True
+    )
     parser.add_argument('--classes', metavar='CLASSES', default=5)
-    parser.add_argument('--weights', metavar='WEIGHTS', help='path to the weights file', required=True)
-    parser.add_argument('-a', '--arch', metavar='ARCH', default='shufflenet_v1_g3')
-    parser.add_argument('-j', '--workers', default=0, type=int, metavar='N',
-                        help='number of data loading workers (default: 4)')
-    parser.add_argument('-b', '--batch-size', default=100, type=int,
-                        metavar='N',
-                        help='mini-batch size (default: 100) for test')
-    parser.add_argument('-r', '--resolution', default=224, type=int,
-                        metavar='R',
-                        help='resolution (default: 224) for test')
+    parser.add_argument(
+        '--weights',
+        metavar='WEIGHTS',
+        help='path to the weights file',
+        required=True,
+    )
+    parser.add_argument(
+        '-a', '--arch', metavar='ARCH', default='shufflenet_v1_g3'
+    )
+    parser.add_argument(
+        '-j',
+        '--workers',
+        default=0,
+        type=int,
+        metavar='N',
+        help='number of data loading workers (default: 4)',
+    )
+    parser.add_argument(
+        '-b',
+        '--batch-size',
+        default=100,
+        type=int,
+        metavar='N',
+        help='mini-batch size (default: 100) for test',
+    )
+    parser.add_argument(
+        '-r',
+        '--resolution',
+        default=224,
+        type=int,
+        metavar='R',
+        help='resolution (default: 224) for test',
+    )
 
     args = parser.parse_args()
     return args
@@ -51,7 +76,10 @@ def test(args):
 
     if os.path.isfile(args.weights):
         print("=> loading checkpoint '{}'".format(args.weights))
-        model.load_state_dict(torch.load(args.weights, map_location="cuda:0")["state_dict"], strict=True)
+        model.load_state_dict(
+            torch.load(args.weights, map_location="cuda:0")["state_dict"],
+            strict=True,
+        )
     else:
         print("=> no checkpoint found at '{}'".format(args.weights))
 
@@ -61,13 +89,20 @@ def test(args):
         [
             transforms.Resize((args.resolution, args.resolution)),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
 
     val_set = My_Dataset_with_txt(args.data, "val.txt", transform=transform)
-    val_dataloader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False,
-                                num_workers=args.workers, pin_memory=True, drop_last=False,
-                                collate_fn=val_set.collate_fn)
+    val_dataloader = DataLoader(
+        val_set,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.workers,
+        pin_memory=True,
+        drop_last=False,
+        collate_fn=val_set.collate_fn,
+    )
 
     validate(val_dataloader, model, criterion, use_gpu)
 
@@ -78,9 +113,8 @@ def validate(val_loader, model, criterion, use_gpu):
     top1 = AverageMeter('Acc@1', ':6.2f')
     top5 = AverageMeter('Acc@5', ':6.2f')
     progress = ProgressMeter(
-        len(val_loader),
-        [batch_time, losses, top1, top5],
-        prefix='Test: ')
+        len(val_loader), [batch_time, losses, top1, top5], prefix='Test: '
+    )
 
     # switch to evaluate mode
     model.eval()
@@ -94,8 +128,9 @@ def validate(val_loader, model, criterion, use_gpu):
 
             # compute output
             output = model(images)
-            if isinstance(output,
-                          dict):  # If the model being tested is a training-time RepVGGplus, which has auxiliary classifiers
+            if isinstance(
+                output, dict
+            ):  # If the model being tested is a training-time RepVGGplus, which has auxiliary classifiers
                 output = output['main']
             loss = criterion(output, target)
 
@@ -112,8 +147,11 @@ def validate(val_loader, model, criterion, use_gpu):
             if i % 10 == 0:
                 progress.display(i)
 
-        print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'
-              .format(top1=top1, top5=top5))
+        print(
+            ' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'.format(
+                top1=top1, top5=top5
+            )
+        )
 
     return top1.avg
 

@@ -22,6 +22,7 @@ def is_zip_path(img_or_path):
 
 class ZipReader(object):
     """A class to read zipped files"""
+
     zip_bank = dict()
 
     def __init__(self):
@@ -38,10 +39,12 @@ class ZipReader(object):
     @staticmethod
     def split_zip_style_path(path):
         pos_at = path.index('@')
-        assert pos_at != -1, "character '@' is not found from the given path '%s'" % path
+        assert pos_at != -1, (
+            "character '@' is not found from the given path '%s'" % path
+        )
 
-        zip_path = path[0: pos_at]
-        folder_path = path[pos_at + 1:]
+        zip_path = path[0:pos_at]
+        folder_path = path[pos_at + 1 :]
         folder_path = str.strip(folder_path, '/')
         return zip_path, folder_path
 
@@ -53,13 +56,15 @@ class ZipReader(object):
         folder_list = []
         for file_foler_name in zfile.namelist():
             file_foler_name = str.strip(file_foler_name, '/')
-            if file_foler_name.startswith(folder_path) and \
-                    len(os.path.splitext(file_foler_name)[-1]) == 0 and \
-                    file_foler_name != folder_path:
+            if (
+                file_foler_name.startswith(folder_path)
+                and len(os.path.splitext(file_foler_name)[-1]) == 0
+                and file_foler_name != folder_path
+            ):
                 if len(folder_path) == 0:
                     folder_list.append(file_foler_name)
                 else:
-                    folder_list.append(file_foler_name[len(folder_path) + 1:])
+                    folder_list.append(file_foler_name[len(folder_path) + 1 :])
 
         return folder_list
 
@@ -73,12 +78,15 @@ class ZipReader(object):
         file_lists = []
         for file_foler_name in zfile.namelist():
             file_foler_name = str.strip(file_foler_name, '/')
-            if file_foler_name.startswith(folder_path) and \
-                    str.lower(os.path.splitext(file_foler_name)[-1]) in extension:
+            if (
+                file_foler_name.startswith(folder_path)
+                and str.lower(os.path.splitext(file_foler_name)[-1])
+                in extension
+            ):
                 if len(folder_path) == 0:
                     file_lists.append(file_foler_name)
                 else:
-                    file_lists.append(file_foler_name[len(folder_path) + 1:])
+                    file_lists.append(file_foler_name[len(folder_path) + 1 :])
 
         return file_lists
 

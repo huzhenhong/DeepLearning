@@ -18,7 +18,9 @@ class MyDataSet(Dataset):
         img = Image.open(self.images_path[item])
         # RGB为彩色图片，L为灰度图片
         if img.mode != 'RGB':
-            raise ValueError("image: {} isn't RGB mode.".format(self.images_path[item]))
+            raise ValueError(
+                "image: {} isn't RGB mode.".format(self.images_path[item])
+            )
         label = self.images_class[item]
 
         if self.transform is not None:

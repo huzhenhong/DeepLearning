@@ -6,21 +6,25 @@ import os
 from PIL import Image
 import matplotlib.pyplot as plt
 
-def init_transform(name:str='resnet'):
+
+def init_transform(name: str = 'resnet'):
     if name == 'resnet':
         data_transform = transforms.Compose(
             [
                 transforms.Resize(256),  # 单个参数，最小边resize到256,另一边保持比例缩放
                 transforms.CenterCrop(224),
                 transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                ),
             ]
         )
     elif name == 'alexnet':
         data_transform = transforms.Compose(
-            [transforms.Resize((224, 224)),
-             transforms.ToTensor(),
-             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            [
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
             ]
         )
     elif name == 'vgg':
@@ -29,16 +33,25 @@ def init_transform(name:str='resnet'):
                 transforms.Resize(256),  # 单个参数，最小边resize到256,另一边保持比例缩放
                 transforms.CenterCrop(224),
                 transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                ),
             ]
         )
     else:
-        raise ValueError("transformer name must be 'resnet' or 'alexnet' or 'vgg'.now transformer type is {}".format(name))
+        raise ValueError(
+            "transformer name must be 'resnet' or 'alexnet' or 'vgg'.now transformer type is {}".format(
+                name
+            )
+        )
 
     return data_transform
 
-def init_model(name:str='resnet',weights:str='./resnet34.pth'):
-    assert os.path.exists(weights),"weights path: {} is not exists".format(weights)
+
+def init_model(name: str = 'resnet', weights: str = './resnet34.pth'):
+    assert os.path.exists(weights), "weights path: {} is not exists".format(
+        weights
+    )
     if name == 'resnet':
         model = resnet34(num_classes=1000)
         model.load_state_dict(torch.load(weights))
@@ -49,26 +62,36 @@ def init_model(name:str='resnet',weights:str='./resnet34.pth'):
         model = vgg16(num_classes=1000)
         model.load_state_dict(torch.load(weights))
     else:
-        raise ValueError("model name must be 'resnet' or 'alexnet' or 'vgg'.now model name is {}".format(name))
+        raise ValueError(
+            "model name must be 'resnet' or 'alexnet' or 'vgg'.now model name is {}".format(
+                name
+            )
+        )
     return model
 
-def init_image(image_path:str='./tulip.jpg',transformer_type='resnet'):
-    assert os.path.exists(image_path), "image path: {} is not exists".format(image_path)
+
+def init_image(image_path: str = './tulip.jpg', transformer_type='resnet'):
+    assert os.path.exists(image_path), "image path: {} is not exists".format(
+        image_path
+    )
     # load image
     img = Image.open(image_path)
     # [C,H,W]
     transform = init_transform(transformer_type)
     img = transform(img)
     # [N,C,H,W]
-    img = torch.unsqueeze(img,dim=0)
+    img = torch.unsqueeze(img, dim=0)
     return img
+
 
 def main(model, img, every_channel=True):
     model = model.eval()
     output = model(img)
     for feature_map in output:
         # [N, C, H, W] -> [C, H, W]
-        im = np.squeeze(feature_map.detach().numpy())  # .detach()：复制一份参数，且不进行反向传播
+        im = np.squeeze(
+            feature_map.detach().numpy()
+        )  # .detach()：复制一份参数，且不进行反向传播
         # [C, H, W] -> [H, W, C]
         im = np.transpose(im, [1, 2, 0])
 
@@ -78,22 +101,21 @@ def main(model, img, every_channel=True):
         nw = min(im.shape[2], show_num)
         if every_channel:
             for i in range(nw):
-                ax = plt.subplot(row, nw//row+1, i+1)
+                ax = plt.subplot(row, nw // row + 1, i + 1)
                 # [H, W, C]
-                plt.imshow(im[:, :, i], cmap='gray')  #, cmap='gray'
+                plt.imshow(im[:, :, i], cmap='gray')  # , cmap='gray'
 
         else:
             plt.imshow(np.mean(im, axis=2), cmap='gray')
         plt.show()
+
 
 if __name__ == '__main__':
     # 可视化分析网络中的某层特征图
     model_name = 'resnet'
     weights = './weights/resnet34.pth'
     model = init_model(name=model_name, weights=weights)
-    img = init_image(image_path='./test_img/sunflower.jpg',transformer_type=model_name)
+    img = init_image(
+        image_path='./test_img/sunflower.jpg', transformer_type=model_name
+    )
     main(model=model, img=img)
-
-
-
-

@@ -61,7 +61,7 @@ _C.MODEL.SWIN.EMBED_DIM = 96
 _C.MODEL.SWIN.DEPTHS = [2, 2, 6, 2]
 _C.MODEL.SWIN.NUM_HEADS = [3, 6, 12, 24]
 _C.MODEL.SWIN.WINDOW_SIZE = 7
-_C.MODEL.SWIN.MLP_RATIO = 4.
+_C.MODEL.SWIN.MLP_RATIO = 4.0
 _C.MODEL.SWIN.QKV_BIAS = True
 _C.MODEL.SWIN.QK_SCALE = None
 _C.MODEL.SWIN.APE = False
@@ -75,7 +75,7 @@ _C.MODEL.SWINV2.EMBED_DIM = 96
 _C.MODEL.SWINV2.DEPTHS = [2, 2, 6, 2]
 _C.MODEL.SWINV2.NUM_HEADS = [3, 6, 12, 24]
 _C.MODEL.SWINV2.WINDOW_SIZE = 7
-_C.MODEL.SWINV2.MLP_RATIO = 4.
+_C.MODEL.SWINV2.MLP_RATIO = 4.0
 _C.MODEL.SWINV2.QKV_BIAS = True
 _C.MODEL.SWINV2.APE = False
 _C.MODEL.SWINV2.PATCH_NORM = True
@@ -89,7 +89,7 @@ _C.MODEL.SWIN_MOE.EMBED_DIM = 96
 _C.MODEL.SWIN_MOE.DEPTHS = [2, 2, 6, 2]
 _C.MODEL.SWIN_MOE.NUM_HEADS = [3, 6, 12, 24]
 _C.MODEL.SWIN_MOE.WINDOW_SIZE = 7
-_C.MODEL.SWIN_MOE.MLP_RATIO = 4.
+_C.MODEL.SWIN_MOE.MLP_RATIO = 4.0
 _C.MODEL.SWIN_MOE.QKV_BIAS = True
 _C.MODEL.SWIN_MOE.QK_SCALE = None
 _C.MODEL.SWIN_MOE.APE = False
@@ -119,7 +119,7 @@ _C.MODEL.SWIN_MLP.EMBED_DIM = 96
 _C.MODEL.SWIN_MLP.DEPTHS = [2, 2, 6, 2]
 _C.MODEL.SWIN_MLP.NUM_HEADS = [3, 6, 12, 24]
 _C.MODEL.SWIN_MLP.WINDOW_SIZE = 7
-_C.MODEL.SWIN_MLP.MLP_RATIO = 4.
+_C.MODEL.SWIN_MLP.MLP_RATIO = 4.0
 _C.MODEL.SWIN_MLP.APE = False
 _C.MODEL.SWIN_MLP.PATCH_NORM = True
 
@@ -278,7 +278,9 @@ def update_config(config, args):
     if args.use_checkpoint:
         config.TRAIN.USE_CHECKPOINT = True
     if args.amp_opt_level:
-        print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
+        print(
+            "[warning] Apex amp has been deprecated, please use pytorch amp instead!"
+        )
         if args.amp_opt_level == 'O0':
             config.AMP_ENABLE = False
     if args.disable_amp:

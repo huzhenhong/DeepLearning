@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def drop_path(x, drop_prob: float = 0., training: bool = False):
+def drop_path(x, drop_prob: float = 0.0, training: bool = False):
     """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
     This is the same as the DropConnect impl I created for EfficientNet, etc networks, however,
     the original name is misleading as 'Drop Connect' is a different form of dropout in a separate paper...
@@ -16,19 +16,22 @@ def drop_path(x, drop_prob: float = 0., training: bool = False):
     changing the layer and argument names to 'drop path' rather than mix DropConnect as a layer name and use
     'survival rate' as the argument.
     """
-    if drop_prob == 0. or not training:
+    if drop_prob == 0.0 or not training:
         return x
     keep_prob = 1 - drop_prob
-    shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
-    random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+    shape = (x.shape[0],) + (1,) * (
+        x.ndim - 1
+    )  # work with diff dim tensors, not just 2D ConvNets
+    random_tensor = keep_prob + torch.rand(
+        shape, dtype=x.dtype, device=x.device
+    )
     random_tensor.floor_()  # binarize
     output = x.div(keep_prob) * random_tensor
     return output
 
 
 class DropPath(nn.Module):
-    """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
-    """
+    """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
 
     def __init__(self, drop_prob=None):
         super(DropPath, self).__init__()
@@ -39,7 +42,7 @@ class DropPath(nn.Module):
 
 
 class LayerNorm(nn.Module):
-    r""" LayerNorm that supports two data formats: channels_last (default) or channels_first.
+    r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with
     shape (batch_size, height, width, channels) while channels_first corresponds to inputs
     with shape (batch_size, channels, height, width).
@@ -47,8 +50,12 @@ class LayerNorm(nn.Module):
 
     def __init__(self, normalized_shape, eps=1e-6, data_format="channels_last"):
         super().__init__()
-        self.weight = nn.Parameter(torch.ones(normalized_shape), requires_grad=True)
-        self.bias = nn.Parameter(torch.zeros(normalized_shape), requires_grad=True)
+        self.weight = nn.Parameter(
+            torch.ones(normalized_shape), requires_grad=True
+        )
+        self.bias = nn.Parameter(
+            torch.zeros(normalized_shape), requires_grad=True
+        )
         self.eps = eps
         self.data_format = data_format
         if self.data_format not in ["channels_last", "channels_first"]:
@@ -57,7 +64,9 @@ class LayerNorm(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.data_format == "channels_last":
-            return F.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
+            return F.layer_norm(
+                x, self.normalized_shape, self.weight, self.bias, self.eps
+            )
         elif self.data_format == "channels_first":
             # [batch_size, channels, height, width]
             mean = x.mean(1, keepdim=True)
@@ -68,7 +77,7 @@ class LayerNorm(nn.Module):
 
 
 class Block(nn.Module):
-    r""" ConvNeXt Block. There are two equivalent implementations:
+    r"""ConvNeXt Block. There are two equivalent implementations:
     (1) DwConv -> LayerNorm (channels_first) -> 1x1 Conv -> GELU -> 1x1 Conv; all in (N, C, H, W)
     (2) DwConv -> Permute to (N, H, W, C); LayerNorm (channels_last) -> Linear -> GELU -> Linear; Permute back
     We use (2) as we find it slightly faster in PyTorch
@@ -78,16 +87,27 @@ class Block(nn.Module):
         layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
     """
 
-    def __init__(self, dim, drop_rate=0., layer_scale_init_value=1e-6):
+    def __init__(self, dim, drop_rate=0.0, layer_scale_init_value=1e-6):
         super().__init__()
-        self.dwconv = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim)  # depthwise conv
+        self.dwconv = nn.Conv2d(
+            dim, dim, kernel_size=7, padding=3, groups=dim
+        )  # depthwise conv
         self.norm = LayerNorm(dim, eps=1e-6, data_format="channels_last")
-        self.pwconv1 = nn.Linear(dim, 4 * dim)  # pointwise/1x1 convs, implemented with linear layers
+        self.pwconv1 = nn.Linear(
+            dim, 4 * dim
+        )  # pointwise/1x1 convs, implemented with linear layers
         self.act = nn.GELU()
         self.pwconv2 = nn.Linear(4 * dim, dim)
-        self.gamma = nn.Parameter(layer_scale_init_value * torch.ones((dim,)),
-                                  requires_grad=True) if layer_scale_init_value > 0 else None
-        self.drop_path = DropPath(drop_rate) if drop_rate > 0. else nn.Identity()
+        self.gamma = (
+            nn.Parameter(
+                layer_scale_init_value * torch.ones((dim,)), requires_grad=True
+            )
+            if layer_scale_init_value > 0
+            else None
+        )
+        self.drop_path = (
+            DropPath(drop_rate) if drop_rate > 0.0 else nn.Identity()
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         shortcut = x
@@ -106,7 +126,7 @@ class Block(nn.Module):
 
 
 class ConvNeXt(nn.Module):
-    r""" ConvNeXt
+    r"""ConvNeXt
         A PyTorch impl of : `A ConvNet for the 2020s`  -
           https://arxiv.org/pdf/2201.03545.pdf
     Args:
@@ -119,29 +139,52 @@ class ConvNeXt(nn.Module):
         head_init_scale (float): Init scaling value for classifier weights and biases. Default: 1.
     """
 
-    def __init__(self, in_chans: int = 3, num_classes: int = 1000, depths: list = None,
-                 dims: list = None, drop_path_rate: float = 0., layer_scale_init_value: float = 1e-6,
-                 head_init_scale: float = 1.):
+    def __init__(
+        self,
+        in_chans: int = 3,
+        num_classes: int = 1000,
+        depths: list = None,
+        dims: list = None,
+        drop_path_rate: float = 0.0,
+        layer_scale_init_value: float = 1e-6,
+        head_init_scale: float = 1.0,
+    ):
         super().__init__()
-        self.downsample_layers = nn.ModuleList()  # stem and 3 intermediate downsampling conv layers
-        stem = nn.Sequential(nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
-                             LayerNorm(dims[0], eps=1e-6, data_format="channels_first"))
+        self.downsample_layers = (
+            nn.ModuleList()
+        )  # stem and 3 intermediate downsampling conv layers
+        stem = nn.Sequential(
+            nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
+            LayerNorm(dims[0], eps=1e-6, data_format="channels_first"),
+        )
         self.downsample_layers.append(stem)
 
         # 对应stage2-stage4前的3个downsample
         for i in range(3):
-            downsample_layer = nn.Sequential(LayerNorm(dims[i], eps=1e-6, data_format="channels_first"),
-                                             nn.Conv2d(dims[i], dims[i + 1], kernel_size=2, stride=2))
+            downsample_layer = nn.Sequential(
+                LayerNorm(dims[i], eps=1e-6, data_format="channels_first"),
+                nn.Conv2d(dims[i], dims[i + 1], kernel_size=2, stride=2),
+            )
             self.downsample_layers.append(downsample_layer)
 
-        self.stages = nn.ModuleList()  # 4 feature resolution stages, each consisting of multiple blocks
-        dp_rates = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]
+        self.stages = (
+            nn.ModuleList()
+        )  # 4 feature resolution stages, each consisting of multiple blocks
+        dp_rates = [
+            x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))
+        ]
         cur = 0
         # 构建每个stage中堆叠的block
         for i in range(4):
             stage = nn.Sequential(
-                *[Block(dim=dims[i], drop_rate=dp_rates[cur + j], layer_scale_init_value=layer_scale_init_value)
-                  for j in range(depths[i])]
+                *[
+                    Block(
+                        dim=dims[i],
+                        drop_rate=dp_rates[cur + j],
+                        layer_scale_init_value=layer_scale_init_value,
+                    )
+                    for j in range(depths[i])
+                ]
             )
             self.stages.append(stage)
             cur += depths[i]
@@ -162,7 +205,9 @@ class ConvNeXt(nn.Module):
             x = self.downsample_layers[i](x)
             x = self.stages[i](x)
 
-        return self.norm(x.mean([-2, -1]))  # global average pooling, (N, C, H, W) -> (N, C)
+        return self.norm(
+            x.mean([-2, -1])
+        )  # global average pooling, (N, C, H, W) -> (N, C)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.forward_features(x)
@@ -172,44 +217,52 @@ class ConvNeXt(nn.Module):
 
 def convnext_tiny(num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth
-    model = ConvNeXt(depths=[3, 3, 9, 3],
-                     dims=[96, 192, 384, 768],
-                     num_classes=num_classes,
-                     drop_path_rate=0.2)
+    model = ConvNeXt(
+        depths=[3, 3, 9, 3],
+        dims=[96, 192, 384, 768],
+        num_classes=num_classes,
+        drop_path_rate=0.2,
+    )
     return model
 
 
 def convnext_small(num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_small_1k_224_ema.pth
-    model = ConvNeXt(depths=[3, 3, 27, 3],
-                     dims=[96, 192, 384, 768],
-                     num_classes=num_classes)
+    model = ConvNeXt(
+        depths=[3, 3, 27, 3], dims=[96, 192, 384, 768], num_classes=num_classes
+    )
     return model
 
 
 def convnext_base(num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_base_1k_224_ema.pth
     # https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_224.pth
-    model = ConvNeXt(depths=[3, 3, 27, 3],
-                     dims=[128, 256, 512, 1024],
-                     num_classes=num_classes)
+    model = ConvNeXt(
+        depths=[3, 3, 27, 3],
+        dims=[128, 256, 512, 1024],
+        num_classes=num_classes,
+    )
     return model
 
 
 def convnext_large(num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_large_1k_224_ema.pth
     # https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_224.pth
-    model = ConvNeXt(depths=[3, 3, 27, 3],
-                     dims=[192, 384, 768, 1536],
-                     num_classes=num_classes)
+    model = ConvNeXt(
+        depths=[3, 3, 27, 3],
+        dims=[192, 384, 768, 1536],
+        num_classes=num_classes,
+    )
     return model
 
 
 def convnext_xlarge(num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_224.pth
-    model = ConvNeXt(depths=[3, 3, 27, 3],
-                     dims=[256, 512, 1024, 2048],
-                     num_classes=num_classes)
+    model = ConvNeXt(
+        depths=[3, 3, 27, 3],
+        dims=[256, 512, 1024, 2048],
+        num_classes=num_classes,
+    )
     return model
 
 
@@ -220,14 +273,15 @@ if __name__ == '__main__':
     model = convnext_tiny(num_classes=5)
     model.to(device)
     print(model)
-    x = torch.randn(1,3,224,224,device=device)
+    x = torch.randn(1, 3, 224, 224, device=device)
     y = model(x)
     print(y)
 
     summary(model, input_size=(3, 224, 224))
     from thop import profile
+
     model = convnext_tiny(num_classes=5)
     input = torch.randn(1, 3, 224, 224)
     flops, params = profile(model, inputs=(input,))
-    print("flops:{:.3f}G".format(flops/1e9))
-    print("params:{:.3f}M".format(params/1e6))
+    print("flops:{:.3f}G".format(flops / 1e9))
+    print("params:{:.3f}M".format(params / 1e6))

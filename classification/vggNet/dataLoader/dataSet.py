@@ -8,16 +8,24 @@ import matplotlib.pyplot as plt
 
 def read_split_data(data_root, save_dir, val_rate=0.2, plot_image=False):
     random.seed(0)  # 保证随机结果可复现
-    assert os.path.exists(data_root), "data path:{} does not exists".format(data_root)
+    assert os.path.exists(data_root), "data path:{} does not exists".format(
+        data_root
+    )
 
     # 遍历文件夹，一个文件夹对应一个类别
-    classes = [cla for cla in os.listdir(data_root) if os.path.isdir(os.path.join(data_root, cla))]
+    classes = [
+        cla
+        for cla in os.listdir(data_root)
+        if os.path.isdir(os.path.join(data_root, cla))
+    ]
     # 排序，保证顺序一致
     classes.sort()
 
     # 生成类别名称以及对应的数字索引
     class_indices = dict((k, v) for v, k in enumerate(classes))
-    json_str = json.dumps(dict((val, key) for key, val in class_indices.items()), indent=4)
+    json_str = json.dumps(
+        dict((val, key) for key, val in class_indices.items()), indent=4
+    )
     with open(save_dir + '/class_indices.json', 'w') as json_file:
         json_file.write(json_str)
 
@@ -36,7 +44,11 @@ def read_split_data(data_root, save_dir, val_rate=0.2, plot_image=False):
     for cla in tqdm(classes):
         cla_path = os.path.join(data_root, cla)
         # 遍历获取supported支持的所有文件路径
-        images = [os.path.join(data_root, cla, i) for i in os.listdir(cla_path) if os.path.splitext(i)[-1] in supported]
+        images = [
+            os.path.join(data_root, cla, i)
+            for i in os.listdir(cla_path)
+            if os.path.splitext(i)[-1] in supported
+        ]
         # 获取该类别对应的索引
         image_class = class_indices[cla]
         # 记录该类别的样本数量
@@ -76,7 +88,13 @@ def read_split_data(data_root, save_dir, val_rate=0.2, plot_image=False):
         plt.title('class distribution')
         plt.savefig(os.path.join(save_dir, "classes.jpg"))
         # plt.show()
-    return train_images_path, val_images_path, train_images_label, val_images_label, every_class_num
+    return (
+        train_images_path,
+        val_images_path,
+        train_images_label,
+        val_images_label,
+        every_class_num,
+    )
 
 
 if __name__ == '__main__':

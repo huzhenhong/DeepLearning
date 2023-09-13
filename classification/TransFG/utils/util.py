@@ -4,6 +4,7 @@ import torch
 import torch.distributed as dist
 import os
 import logging
+
 # from apex import amp
 
 
@@ -56,7 +57,7 @@ def save_model(cfg, model, output_dir):
     if cfg["train"]["fp16"]:
         checkpoint = {
             'model': model_to_save.state_dict(),
-            'amp': amp.state_dict()
+            'amp': amp.state_dict(),
         }
     else:
         checkpoint = {

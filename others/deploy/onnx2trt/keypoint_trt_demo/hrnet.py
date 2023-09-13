@@ -7,10 +7,19 @@ class BasicBlock(nn.Module):
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(
+            inplanes,
+            planes,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            bias=False,
+        )
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.conv2 = nn.Conv2d(
+            planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+        )
         self.bn2 = nn.BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
@@ -39,12 +48,23 @@ class Bottleneck(nn.Module):
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv1 = nn.Conv2d(
+            inplanes, planes, kernel_size=1, stride=1, padding=0, bias=False
+        )
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.conv2 = nn.Conv2d(
+            planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+        )
         self.bn2 = nn.BatchNorm2d(planes)
-        self.conv3 = nn.Conv2d(planes, planes * self.expansion, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv3 = nn.Conv2d(
+            planes,
+            planes * self.expansion,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            bias=False,
+        )
         self.bn3 = nn.BatchNorm2d(planes * self.expansion)
 
         self.downsample = downsample
@@ -92,12 +112,12 @@ class StageModule(nn.Module):
         # 构造每个分支的模块
         self.branches = nn.ModuleList()
         for i in range(self.input_branches):  # 每个分支都先通过4个BasicBlock
-            in_c = c * (2 ** i)
+            in_c = c * (2**i)
             branch = nn.Sequential(
                 BasicBlock(in_c, in_c),
                 BasicBlock(in_c, in_c),
                 BasicBlock(in_c, in_c),
-                BasicBlock(in_c, in_c)
+                BasicBlock(in_c, in_c),
             )
             self.branches.append(branch)
 
@@ -106,7 +126,9 @@ class StageModule(nn.Module):
         # 下面的代码可以理解为第j个分支 经过一系列操作 输出 用于 融合第i的分支的模块
         for i in range(self.out_branches):  # 构建每个分支的操作：如identity，上采样，下采样
             self.fuse_layers.append(nn.ModuleList())  # 用于存放 融合第i个分支的所需的layer
-            for j in range(self.input_branches):  # 遍历每个输入分支，构建该分支到输出的操作，如identity，上采样，下采样
+            for j in range(
+                self.input_branches
+            ):  # 遍历每个输入分支，构建该分支到输出的操作，如identity，上采样，下采样
                 if j == i:  # 相等，说明是同一分支，不做任何操作
                     self.fuse_layers[-1].append(nn.Identity())
                 elif j < i:  # 输入分支分辨率大于输出分支分辨率，需要下采样
@@ -114,26 +136,55 @@ class StageModule(nn.Module):
                     # 这里的下采样操作分为两个部分，前i-j-j个卷积层，只进行下采样，通道不变。最后一个卷积层，既要下采样，又要变换通道
                     ops = []
                     for k in range(i - j - 1):  # 前i-j-j个卷积层
-                        ops.append(nn.Sequential(
-                            nn.Conv2d(c * (2 ** j), c * (2 ** j), kernel_size=3, stride=2, padding=1, bias=False),
-                            nn.BatchNorm2d(c * (2 ** j)),
-                            nn.ReLU(inplace=True)
-                        ))
+                        ops.append(
+                            nn.Sequential(
+                                nn.Conv2d(
+                                    c * (2**j),
+                                    c * (2**j),
+                                    kernel_size=3,
+                                    stride=2,
+                                    padding=1,
+                                    bias=False,
+                                ),
+                                nn.BatchNorm2d(c * (2**j)),
+                                nn.ReLU(inplace=True),
+                            )
+                        )
                     # 最后一个卷积层，既要进行下采样，又要进行通道变化
-                    ops.append(nn.Sequential(
-                        # 将通道数量变为输出分支的数量
-                        nn.Conv2d(c * (2 ** j), c * (2 ** i), kernel_size=3, stride=2, padding=1, bias=False),
-                        nn.BatchNorm2d(c * (2 ** i)),
-                        nn.ReLU(inplace=True)
-                    ))
+                    ops.append(
+                        nn.Sequential(
+                            # 将通道数量变为输出分支的数量
+                            nn.Conv2d(
+                                c * (2**j),
+                                c * (2**i),
+                                kernel_size=3,
+                                stride=2,
+                                padding=1,
+                                bias=False,
+                            ),
+                            nn.BatchNorm2d(c * (2**i)),
+                            nn.ReLU(inplace=True),
+                        )
+                    )
                     self.fuse_layers[-1].append(nn.Sequential(*ops))
                 else:  # j>i 输入分支的分辨率小于输出分支的分辨率，要进行上采样
-                    self.fuse_layers[-1].append(nn.Sequential(
-                        # 上采样操作通过1x1卷积改变通道，通过upsample上采样
-                        nn.Conv2d(c * (2 ** j), c * (2 ** i), kernel_size=1, stride=1, padding=0, bias=False),
-                        nn.BatchNorm2d(c * (2 ** i)),
-                        nn.Upsample(scale_factor=2.0 ** (j - i), mode='nearest')
-                    ))
+                    self.fuse_layers[-1].append(
+                        nn.Sequential(
+                            # 上采样操作通过1x1卷积改变通道，通过upsample上采样
+                            nn.Conv2d(
+                                c * (2**j),
+                                c * (2**i),
+                                kernel_size=1,
+                                stride=1,
+                                padding=0,
+                                bias=False,
+                            ),
+                            nn.BatchNorm2d(c * (2**i)),
+                            nn.Upsample(
+                                scale_factor=2.0 ** (j - i), mode='nearest'
+                            ),
+                        )
+                    )
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
@@ -146,30 +197,41 @@ class StageModule(nn.Module):
             x_fused.append(
                 self.relu(
                     # 融合第i个输出分支  所需的j个输入
-                    sum([self.fuse_layers[i][j](x[j]) for j in range(len(self.branches))])
+                    sum(
+                        [
+                            self.fuse_layers[i][j](x[j])
+                            for j in range(len(self.branches))
+                        ]
+                    )
                 )
             )
         return x_fused
 
 
 class HighResolution(nn.Module):
-    def __init__(self, base_channel: int = 32, num_joint: int = 17, stage_block=None):
+    def __init__(
+        self, base_channel: int = 32, num_joint: int = 17, stage_block=None
+    ):
         super(HighResolution, self).__init__()
 
         if stage_block is None:
             stage_block = [1, 4, 2]
 
         # stem  下采样4倍
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(
+            3, 64, kernel_size=3, stride=2, padding=1, bias=False
+        )
         self.bn1 = nn.BatchNorm2d(64)
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1, bias=False)
+        self.conv2 = nn.Conv2d(
+            64, 64, kernel_size=3, stride=2, padding=1, bias=False
+        )
         self.bn2 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
         # Stage1
         downsample = nn.Sequential(
             nn.Conv2d(64, 256, kernel_size=1, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(256)
+            nn.BatchNorm2d(256),
         )
         self.layer1 = nn.Sequential(
             Bottleneck(64, 64, stride=1, downsample=downsample),
@@ -182,23 +244,41 @@ class HighResolution(nn.Module):
         self.transition1 = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.Conv2d(256, base_channel, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.Conv2d(
+                        256,
+                        base_channel,
+                        kernel_size=3,
+                        stride=1,
+                        padding=1,
+                        bias=False,
+                    ),
                     nn.BatchNorm2d(base_channel),
-                    nn.ReLU(inplace=True)
+                    nn.ReLU(inplace=True),
                 ),
                 nn.Sequential(
                     nn.Sequential(
-                        nn.Conv2d(256, base_channel * 2, kernel_size=3, stride=2, padding=1, bias=False),
+                        nn.Conv2d(
+                            256,
+                            base_channel * 2,
+                            kernel_size=3,
+                            stride=2,
+                            padding=1,
+                            bias=False,
+                        ),
                         nn.BatchNorm2d(base_channel * 2),
-                        nn.ReLU(inplace=True)
+                        nn.ReLU(inplace=True),
                     )
-                )
+                ),
             ]
         )
 
         # Stage2
         self.stage2 = nn.Sequential(
-            *[StageModule(input_branches=2, out_branches=2, c=base_channel) for _ in range(stage_block[0])])
+            *[
+                StageModule(input_branches=2, out_branches=2, c=base_channel)
+                for _ in range(stage_block[0])
+            ]
+        )
 
         # transition2
         self.transition2 = nn.Sequential(
@@ -206,16 +286,27 @@ class HighResolution(nn.Module):
             nn.Identity(),
             nn.Sequential(
                 nn.Sequential(
-                    nn.Conv2d(base_channel * 2, base_channel * 4, kernel_size=3, stride=2, padding=1, bias=False),
+                    nn.Conv2d(
+                        base_channel * 2,
+                        base_channel * 4,
+                        kernel_size=3,
+                        stride=2,
+                        padding=1,
+                        bias=False,
+                    ),
                     nn.BatchNorm2d(base_channel * 4),
-                    nn.ReLU(inplace=True)
+                    nn.ReLU(inplace=True),
                 )
-            )
+            ),
         )
 
         # stage3
         self.stage3 = nn.Sequential(
-            *[StageModule(input_branches=3, out_branches=3, c=base_channel) for _ in range(stage_block[1])])
+            *[
+                StageModule(input_branches=3, out_branches=3, c=base_channel)
+                for _ in range(stage_block[1])
+            ]
+        )
 
         # transition3
         self.transition3 = nn.ModuleList(
@@ -225,11 +316,18 @@ class HighResolution(nn.Module):
                 nn.Identity(),
                 nn.Sequential(
                     nn.Sequential(
-                        nn.Conv2d(base_channel * 4, base_channel * 8, kernel_size=3, stride=2, padding=1, bias=False),
+                        nn.Conv2d(
+                            base_channel * 4,
+                            base_channel * 8,
+                            kernel_size=3,
+                            stride=2,
+                            padding=1,
+                            bias=False,
+                        ),
                         nn.BatchNorm2d(base_channel * 8),
-                        nn.ReLU(inplace=True)
+                        nn.ReLU(inplace=True),
                     )
-                )
+                ),
             ]
         )
 
@@ -237,12 +335,13 @@ class HighResolution(nn.Module):
         self.stage4 = nn.Sequential(
             StageModule(input_branches=4, out_branches=4, c=base_channel),
             StageModule(input_branches=4, out_branches=4, c=base_channel),
-            StageModule(input_branches=4, out_branches=1, c=base_channel)
-
+            StageModule(input_branches=4, out_branches=1, c=base_channel),
         )
 
         # 预测头
-        self.final_layer = nn.Conv2d(base_channel, num_joint, kernel_size=1, stride=1, padding=0)
+        self.final_layer = nn.Conv2d(
+            base_channel, num_joint, kernel_size=1, stride=1, padding=0
+        )
 
     def forward(self, x):
         b, c, h, w = x.shape
@@ -283,7 +382,7 @@ class HighResolution(nn.Module):
         if not self.training:
             x = torch.sigmoid(x)
             h = torch.nn.MaxPool2d(kernel_size=3, stride=1, padding=1)(x)
-            keep = 1. - torch.ceil(h - x)
+            keep = 1.0 - torch.ceil(h - x)
             # keep = (h == x).float()  # 保留下极大值点
             x = h * keep
 

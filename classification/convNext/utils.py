@@ -28,6 +28,7 @@ def matplotlib_imshow(img, one_channel=False):
         # plt.show()
         return norm_image, fig
 
+
 def plot_data_loader_image(data_loader):
     batch_size = data_loader.batch_size
     plot_num = min(batch_size, 4)
@@ -45,14 +46,17 @@ def plot_data_loader_image(data_loader):
             # 反Normalize操作
             img = (img * [0.229, 0.224, 0.225] + [0.485, 0.456, 0.406]) * 255
             label = labels[i].item()
-            plt.subplot(1, plot_num, i+1)
+            plt.subplot(1, plot_num, i + 1)
             plt.xlabel(class_indices[str(label)])
             plt.xticks([])  # 去掉x轴的刻度
             plt.yticks([])  # 去掉y轴的刻度
             plt.imshow(img.astype('uint8'))
         plt.show()
 
-def train_one_epoch(model, data_loader, device, optimizer, loss_function, epoch,scheduler):
+
+def train_one_epoch(
+    model, data_loader, device, optimizer, loss_function, epoch, scheduler
+):
     model.train()
     accu_loss = torch.zeros(1).to(device)
     accu_num = torch.zeros(1).to(device)
@@ -74,8 +78,13 @@ def train_one_epoch(model, data_loader, device, optimizer, loss_function, epoch,
 
         print(
             "train epoch {} step {} train loss: {:.5f} train acc: {:.5f} lr: {:.7f}".format(
-                epoch, step + 1, accu_loss.item() / (step + 1), accu_num.item() / sample_num,
-                optimizer.param_groups[0]["lr"]))
+                epoch,
+                step + 1,
+                accu_loss.item() / (step + 1),
+                accu_num.item() / sample_num,
+                optimizer.param_groups[0]["lr"],
+            )
+        )
         if not torch.isfinite(loss):
             print('WARNING: non-finite loss, ending training ', loss)
             sys.exit(1)
@@ -107,18 +116,26 @@ def evaluate(model, data_loader, device, loss_function, epoch):
         loss = loss_function(pred, labels.to(device))
         accu_loss += loss
 
-        print("[valid epoch {} step {}] val loss: {:.5f}, val acc: {:.5f}".format(epoch, step + 1,
-                                                                                  accu_loss.item() / (step + 1),
-                                                                                  accu_num.item() / sample_num))
+        print(
+            "[valid epoch {} step {}] val loss: {:.5f}, val acc: {:.5f}".format(
+                epoch,
+                step + 1,
+                accu_loss.item() / (step + 1),
+                accu_num.item() / sample_num,
+            )
+        )
     return accu_loss.item() / (step + 1), accu_num.item() / sample_num
 
-def create_lr_scheduler(optimizer,
-                        num_step: int,
-                        epochs: int,
-                        warmup=True,
-                        warmup_epochs=1,
-                        warmup_factor=1e-3,
-                        end_factor=1e-6):
+
+def create_lr_scheduler(
+    optimizer,
+    num_step: int,
+    epochs: int,
+    warmup=True,
+    warmup_epochs=1,
+    warmup_factor=1e-3,
+    end_factor=1e-6,
+):
     assert num_step > 0 and epochs > 0
     if warmup is False:
         warmup_epochs = 0
@@ -133,22 +150,28 @@ def create_lr_scheduler(optimizer,
             # warmup过程中lr倍率因子从warmup_factor -> 1
             return warmup_factor * (1 - alpha) + alpha
         else:
-            current_step = (x - warmup_epochs * num_step)
+            current_step = x - warmup_epochs * num_step
             cosine_steps = (epochs - warmup_epochs) * num_step
             # warmup后lr倍率因子从1 -> end_factor
-            return ((1 + math.cos(current_step * math.pi / cosine_steps)) / 2) * (1 - end_factor) + end_factor
+            return (
+                (1 + math.cos(current_step * math.pi / cosine_steps)) / 2
+            ) * (1 - end_factor) + end_factor
 
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=f)
 
 
 def get_params_groups(model: torch.nn.Module, weight_decay: float = 1e-5):
     # 记录optimize要训练的权重参数
-    parameter_group_vars = {"decay": {"params": [], "weight_decay": weight_decay},
-                            "no_decay": {"params": [], "weight_decay": 0.}}
+    parameter_group_vars = {
+        "decay": {"params": [], "weight_decay": weight_decay},
+        "no_decay": {"params": [], "weight_decay": 0.0},
+    }
 
     # 记录对应的权重名称
-    parameter_group_names = {"decay": {"params": [], "weight_decay": weight_decay},
-                             "no_decay": {"params": [], "weight_decay": 0.}}
+    parameter_group_names = {
+        "decay": {"params": [], "weight_decay": weight_decay},
+        "no_decay": {"params": [], "weight_decay": 0.0},
+    }
 
     for name, param in model.named_parameters():
         if not param.requires_grad:

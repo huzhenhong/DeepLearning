@@ -21,7 +21,7 @@ class mnist_cnn(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(64 * 3 * 3, 128),  # 64x3x3->128
             nn.ReLU(inplace=True),
-            nn.Linear(128, num_classes)
+            nn.Linear(128, num_classes),
         )
 
     def forward(self, x):
@@ -37,17 +37,17 @@ class mnist_fcn(nn.Module):
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1),  # 3x28x28
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2)  # 32x14x14
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 32x14x14
         )
         self.conv2 = nn.Sequential(
             nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),  # 64x14x14
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2)  # 64x7x7
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 64x7x7
         )
         self.conv3 = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),  # 64x7x7
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2)  # 64x3x3
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 64x3x3
         )
         # 用卷积层代替全连接层，卷积核大小等于上一层的feature map大小
         # 等价于nn.Linear(64*3*3, 128)

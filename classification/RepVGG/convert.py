@@ -11,18 +11,24 @@ from models import get_RepVGG_func_by_name, repvgg_model_convert
 parser = argparse.ArgumentParser(description='RepVGG Conversion')
 parser.add_argument('--load', metavar='LOAD', help='path to the weights file')
 parser.add_argument('--save', metavar='SAVE', help='path to the weights file')
-parser.add_argument('--classes',metavar='CLASSES',type=int,help='number of classes')
+parser.add_argument(
+    '--classes', metavar='CLASSES', type=int, help='number of classes'
+)
 parser.add_argument('-a', '--arch', metavar='ARCH', default='RepVGG-A0')
+
 
 def convert():
     args = parser.parse_args()
 
     if 'plus' in args.arch:
         from models.repvggplus import get_RepVGGplus_func_by_name
-        train_model = get_RepVGGplus_func_by_name(args.arch)(deploy=False, use_checkpoint=False)
+
+        train_model = get_RepVGGplus_func_by_name(args.arch)(
+            deploy=False, use_checkpoint=False
+        )
     else:
         repvgg_build_func = get_RepVGG_func_by_name(args.arch)
-        train_model = repvgg_build_func(deploy=False,num_classes=args.classes)
+        train_model = repvgg_build_func(deploy=False, num_classes=args.classes)
 
     if os.path.isfile(args.load):
         print("=> loading checkpoint '{}'".format(args.load))
@@ -31,7 +37,9 @@ def convert():
             checkpoint = checkpoint['state_dict']
         elif 'model' in checkpoint:
             checkpoint = checkpoint['model']
-        ckpt = {k.replace('module.', ''): v for k, v in checkpoint.items()}  # strip the names
+        ckpt = {
+            k.replace('module.', ''): v for k, v in checkpoint.items()
+        }  # strip the names
         print(ckpt.keys())
         train_model.load_state_dict(ckpt)
     else:

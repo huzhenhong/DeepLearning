@@ -6,8 +6,8 @@
 - torchvision>=0.9.0
 - CUDA>=10.2
 - timm==0.4.12
-- pencv-python==4.4.0.46 
-- termcolor==1.1.0 
+- pencv-python==4.4.0.46
+- termcolor==1.1.0
 - yacs==0.1.8
 
 
@@ -91,12 +91,12 @@ xxx/xxx.JPEG 6
 - 单卡训练
 
 ```
-python main.py --cfg <config-file> 
---data-path <data-path> 
---dataset <dataset> 
---num-classes <num-classes> 
---batch-size <bs> 
---device 0 
+python main.py --cfg <config-file>
+--data-path <data-path>
+--dataset <dataset>
+--num-classes <num-classes>
+--batch-size <bs>
+--device 0
 --pretrained <pretrained>
 --output <output_dir>
 --tag <job-tag>
@@ -123,8 +123,8 @@ python -m torch.distributed.launch --nproc_per_node=2 --master_port 29501 main.p
 - dataset：imagenet(标准数据格式) or read_from_txt(从txt读取数据)
 - num-classes：类别数量
 - batch-size：每个gpu的bs数量
-- device：指定GPU训练 
-- pretrained： 预训练模型 
+- device：指定GPU训练
+- pretrained： 预训练模型
 - output：模型以及日志输出文件夹
 - tag：最终输出的文件名字为output/cfg_name/tag
 

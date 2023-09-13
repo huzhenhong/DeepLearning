@@ -5,8 +5,10 @@ from typing import Type, Any, Callable, Union, List, Optional
 
 
 class SKConv(nn.Module):
-    def __init__(self, in_channels, out_channels, M=2, G=32, r=2, stride=1, L=32):
-        """ Constructor
+    def __init__(
+        self, in_channels, out_channels, M=2, G=32, r=2, stride=1, L=32
+    ):
+        """Constructor
         Args:
             in_channels: input channel dimensionality.
             out_channels: output channel dimensionality.
@@ -22,19 +24,26 @@ class SKConv(nn.Module):
         self.out_channels = out_channels
         self.convs = nn.ModuleList([])
         for i in range(M):
-            self.convs.append(nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=3 + i * 2, stride=stride, padding=1 + i, groups=G),
-                nn.BatchNorm2d(out_channels),
-                nn.ReLU(inplace=True)
-            ))
+            self.convs.append(
+                nn.Sequential(
+                    nn.Conv2d(
+                        in_channels,
+                        out_channels,
+                        kernel_size=3 + i * 2,
+                        stride=stride,
+                        padding=1 + i,
+                        groups=G,
+                    ),
+                    nn.BatchNorm2d(out_channels),
+                    nn.ReLU(inplace=True),
+                )
+            )
         # self.gap = nn.AvgPool2d(int(WH/stride))
         self.fc = nn.Linear(out_channels, d)
 
         self.fcs = nn.ModuleList([])
         for i in range(M):
-            self.fcs.append(
-                nn.Linear(d, out_channels)
-            )
+            self.fcs.append(nn.Linear(d, out_channels))
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
@@ -53,7 +62,9 @@ class SKConv(nn.Module):
             if i == 0:
                 attention_vectors = vector
             else:
-                attention_vectors = torch.cat([attention_vectors, vector], dim=1)
+                attention_vectors = torch.cat(
+                    [attention_vectors, vector], dim=1
+                )
         attention_vectors = self.softmax(attention_vectors)
         attention_vectors = attention_vectors.unsqueeze(-1).unsqueeze(-1)
         fea_v = (feas * attention_vectors).sum(dim=1)
@@ -62,8 +73,18 @@ class SKConv(nn.Module):
 
 # official
 class SKUnit(nn.Module):
-    def __init__(self, in_features, out_features, M, G, r, mid_features=None, stride=1, L=32):
-        """ Constructor
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        M,
+        G,
+        r,
+        mid_features=None,
+        stride=1,
+        L=32,
+    ):
+        """Constructor
         Args:
             in_features: input channel dimensionality.
             out_features: output channel dimensionality.
@@ -83,14 +104,16 @@ class SKUnit(nn.Module):
             SKConv(mid_features, mid_features, M, G, r, stride=stride, L=L),
             nn.BatchNorm2d(mid_features),
             nn.Conv2d(mid_features, out_features, 1, stride=1),
-            nn.BatchNorm2d(out_features)
+            nn.BatchNorm2d(out_features),
         )
-        if in_features == out_features:  # when dim not change, in could be added diectly to out
+        if (
+            in_features == out_features
+        ):  # when dim not change, in could be added diectly to out
             self.shortcut = nn.Sequential()
         else:  # when dim not change, in should also change dim to be added to out
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_features, out_features, 1, stride=stride),
-                nn.BatchNorm2d(out_features)
+                nn.BatchNorm2d(out_features),
             )
 
     def forward(self, x):
@@ -118,15 +141,15 @@ class SKBlock(nn.Module):
     expansion = 2
 
     def __init__(
-            self,
-            inplanes: int,
-            planes: int,
-            stride: int = 1,
-            downsample: Optional[nn.Module] = None,
-            M: int = 2,
-            G: int = 32,
-            r: int = 16,
-            norm_layer: Optional[Callable[..., nn.Module]] = None,
+        self,
+        inplanes: int,
+        planes: int,
+        stride: int = 1,
+        downsample: Optional[nn.Module] = None,
+        M: int = 2,
+        G: int = 32,
+        r: int = 16,
+        norm_layer: Optional[Callable[..., nn.Module]] = None,
     ) -> None:
         super(SKBlock, self).__init__()
         if norm_layer is None:
@@ -135,14 +158,14 @@ class SKBlock(nn.Module):
         self.conv1 = nn.Sequential(
             nn.Conv2d(inplanes, planes, 1, 1, 0, bias=False),
             norm_layer(planes),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
         self.conv2 = SKConv(planes, planes, M, G, r, stride)
 
         self.conv3 = nn.Sequential(
             nn.Conv2d(planes, planes * self.expansion, 1, 1, 0, bias=False),
-            norm_layer(planes * self.expansion)
+            norm_layer(planes * self.expansion),
         )
 
         self.relu = nn.ReLU(inplace=True)
@@ -165,16 +188,16 @@ class SKBlock(nn.Module):
 
 class SKNet(nn.Module):
     def __init__(
-            self,
-            block: Type[Union[SKBlock]] = SKBlock,
-            layers: List[int] = [3, 4, 6, 3],
-            num_classes: int = 1000,
-            M: int = 2,
-            G: int = 32,
-            r: int = 16,
-            stem_width: int = 64,
-            deep_stem: bool = False,
-            norm_layer: Optional[Callable[..., nn.Module]] = None,
+        self,
+        block: Type[Union[SKBlock]] = SKBlock,
+        layers: List[int] = [3, 4, 6, 3],
+        num_classes: int = 1000,
+        M: int = 2,
+        G: int = 32,
+        r: int = 16,
+        stem_width: int = 64,
+        deep_stem: bool = False,
+        norm_layer: Optional[Callable[..., nn.Module]] = None,
     ) -> None:
         super(SKNet, self).__init__()
         if norm_layer is None:
@@ -185,32 +208,65 @@ class SKNet(nn.Module):
 
         if deep_stem:
             self.conv1 = nn.Sequential(
-                nn.Conv2d(3, stem_width, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.Conv2d(
+                    3,
+                    stem_width,
+                    kernel_size=3,
+                    stride=2,
+                    padding=1,
+                    bias=False,
+                ),
                 norm_layer(stem_width),
                 nn.ReLU(inplace=True),
-                nn.Conv2d(stem_width, stem_width, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.Conv2d(
+                    stem_width,
+                    stem_width,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False,
+                ),
                 norm_layer(stem_width),
                 nn.ReLU(inplace=True),
-                nn.Conv2d(stem_width, stem_width * 2, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.Conv2d(
+                    stem_width,
+                    stem_width * 2,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False,
+                ),
             )
         else:
-            self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+            self.conv1 = nn.Conv2d(
+                3, 64, kernel_size=7, stride=2, padding=3, bias=False
+            )
 
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.layer1 = self._make_layer(block, 128, layers[0], stride=1, M=M, G=G, r=r)
-        self.layer2 = self._make_layer(block, 256, layers[1], stride=2, M=M, G=G, r=r)
-        self.layer3 = self._make_layer(block, 512, layers[2], stride=2, M=M, G=G, r=r)
-        self.layer4 = self._make_layer(block, 1024, layers[3], stride=2, M=M, G=G, r=r)
+        self.layer1 = self._make_layer(
+            block, 128, layers[0], stride=1, M=M, G=G, r=r
+        )
+        self.layer2 = self._make_layer(
+            block, 256, layers[1], stride=2, M=M, G=G, r=r
+        )
+        self.layer3 = self._make_layer(
+            block, 512, layers[2], stride=2, M=M, G=G, r=r
+        )
+        self.layer4 = self._make_layer(
+            block, 1024, layers[3], stride=2, M=M, G=G, r=r
+        )
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))  # GAP全局池化
         self.fc = nn.Linear(1024 * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu'
+                )
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -236,24 +292,53 @@ class SKNet(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         return self._forward_impl(x)
 
-    def _make_layer(self, block: Type[Union[SKBlock]], planes: int, blocks: int, stride: int = 1, M: int = 2,
-                    G: int = 32, r: int = 16) -> nn.Sequential:
+    def _make_layer(
+        self,
+        block: Type[Union[SKBlock]],
+        planes: int,
+        blocks: int,
+        stride: int = 1,
+        M: int = 2,
+        G: int = 32,
+        r: int = 16,
+    ) -> nn.Sequential:
         norm_layer = self._norm_layer
         downsample = None
 
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion, 1, stride, 0, bias=False),
-                norm_layer(planes * block.expansion)
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    1,
+                    stride,
+                    0,
+                    bias=False,
+                ),
+                norm_layer(planes * block.expansion),
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, M, G, r, norm_layer))
+        layers.append(
+            block(
+                self.inplanes, planes, stride, downsample, M, G, r, norm_layer
+            )
+        )
 
         self.inplanes = planes * block.expansion
 
         for _ in range(1, blocks):
-            layers.append(block(self.inplanes, planes, stride=1, M=M, G=G, r=r, norm_layer=norm_layer))
+            layers.append(
+                block(
+                    self.inplanes,
+                    planes,
+                    stride=1,
+                    M=M,
+                    G=G,
+                    r=r,
+                    norm_layer=norm_layer,
+                )
+            )
 
         return nn.Sequential(*layers)
 

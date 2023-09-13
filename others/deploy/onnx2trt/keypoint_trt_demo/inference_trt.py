@@ -14,8 +14,11 @@ IMG_FORMATS = ["jpg", "png", "jpeg"]
 
 
 class TRTWrapper(torch.nn.Module):
-    def __init__(self, engine: Union[str, trt.ICudaEngine],
-                 output_names: Optional[Sequence[str]] = None) -> None:
+    def __init__(
+        self,
+        engine: Union[str, trt.ICudaEngine],
+        output_names: Optional[Sequence[str]] = None,
+    ) -> None:
         super().__init__()
         self.engine = engine
         if isinstance(self.engine, str):
@@ -42,13 +45,16 @@ class TRTWrapper(torch.nn.Module):
             # check if input shape is valid
             profile = self.engine.get_profile_shape(profile_id, input_name)
             assert input_tensor.dim() == len(
-                profile[0]), 'Input dim is different from engine profile.'
-            for s_min, s_input, s_max in zip(profile[0], input_tensor.shape,
-                                             profile[2]):
-                assert s_min <= s_input <= s_max, \
-                    'Input shape should be between ' \
-                    + f'{profile[0]} and {profile[2]}' \
+                profile[0]
+            ), 'Input dim is different from engine profile.'
+            for s_min, s_input, s_max in zip(
+                profile[0], input_tensor.shape, profile[2]
+            ):
+                assert s_min <= s_input <= s_max, (
+                    'Input shape should be between '
+                    + f'{profile[0]} and {profile[2]}'
                     + f' but get {tuple(input_tensor.shape)}.'
+                )
             idx = self.engine.get_binding_index(input_name)
 
             # All input tensors must be gpu variables
@@ -70,12 +76,18 @@ class TRTWrapper(torch.nn.Module):
             output = torch.empty(size=shape, dtype=dtype, device=device)
             outputs[output_name] = output
             bindings[idx] = output.data_ptr()
-        self.context.execute_async_v2(bindings,
-                                      torch.cuda.current_stream().cuda_stream)
+        self.context.execute_async_v2(
+            bindings, torch.cuda.current_stream().cuda_stream
+        )
         return outputs
 
 
-def data_preprocessing(file_path, size=(448, 448), mean=[0.406, 0.456, 0.485], std=[0.225, 0.224, 0.229]):
+def data_preprocessing(
+    file_path,
+    size=(448, 448),
+    mean=[0.406, 0.456, 0.485],
+    std=[0.225, 0.224, 0.229],
+):
     # H W C BGR
     img = cv2.imread(file_path)
     # RESIZE
@@ -85,12 +97,13 @@ def data_preprocessing(file_path, size=(448, 448), mean=[0.406, 0.456, 0.485], s
     # Normalization
     mean = np.array(mean).astype(np.float32)
     std = np.array(std).astype(np.float32)
-    img = (img / 255. - mean) / std
+    img = (img / 255.0 - mean) / std
     # B H W C
     img = np.expand_dims(img, axis=0)
     # B H W C -> B C H W
     img = np.transpose(img, (0, 3, 1, 2)).astype(np.float32)
     return img
+
 
 # 得到最终的预测结果，输出1 1 n 3 的tensor,n表示有n个点、3：（1,2）表示（x,y），3表示置信度
 def get_keypoints_preds(preds, img_size, thresh=0.6, max_kp=50):
@@ -133,6 +146,7 @@ def get_keypoints_preds(preds, img_size, thresh=0.6, max_kp=50):
     # bs:[n,4] 表示这张图上有n个点，每个点有4个信息，分别是【 x y 置信度 关键点的类别】
     return output, thresh
 
+
 def draw_pic(image, points):
     for i, p in enumerate(points):
         pos_x = int(p.cpu().numpy()[0])
@@ -145,22 +159,23 @@ def draw_pic(image, points):
 def decode_image(image, mean, std):
     img = image.squeeze().transpose(1, 2, 0)
     # *std+mean * 255
-    img = (img * std + mean) * 255.
+    img = (img * std + mean) * 255.0
     # bgr->rgb
     img = img[:, :, ::-1]
     img = img.astype(np.uint8)
     return img
 
+
 def inference(
-        engine,
-        data_source,
-        input_names='input',
-        output_names='output',
-        size=(224, 224),
-        mean=[0.406, 0.456, 0.485],
-        std=[0.225, 0.224, 0.229],
-        show_img=False,
-        cal_fps=True
+    engine,
+    data_source,
+    input_names='input',
+    output_names='output',
+    size=(224, 224),
+    mean=[0.406, 0.456, 0.485],
+    std=[0.225, 0.224, 0.229],
+    show_img=False,
+    cal_fps=True,
 ):
     # Device
     device = torch.device('cuda')
@@ -168,7 +183,9 @@ def inference(
     assert os.path.exists(engine)
     model = TRTWrapper(engine, [output_names])
     # Load img
-    assert os.path.exists(data_source), "data source: {} does not exists".format(data_source)
+    assert os.path.exists(
+        data_source
+    ), "data source: {} does not exists".format(data_source)
     if os.path.isdir(data_source):
         files = sorted(glob.glob(os.path.join(data_source, '*.*')))
     elif os.path.isfile(data_source):
@@ -187,7 +204,7 @@ def inference(
         if len(images) < num_warmup:
             images *= 100
 
-    for index, image_file in (enumerate(images)):
+    for index, image_file in enumerate(images):
         # torch.cuda.synchronize()
         image = data_preprocessing(image_file, size=size, mean=mean, std=std)
         input_shape = {input_names: torch.from_numpy(image).to(device)}
@@ -195,7 +212,9 @@ def inference(
         output = model(input_shape)[output_names]
         t2 = time.perf_counter()
         elapsed = t2 - t1
-        out, _ = get_keypoints_preds(output, img_size=size, thresh=0.6, max_kp=50)
+        out, _ = get_keypoints_preds(
+            output, img_size=size, thresh=0.6, max_kp=50
+        )
 
         # 带后处理，fps为65.5。每张图片15.3ms .
         # 不带后处理 fps365.0。每张图片2.7ms
@@ -205,7 +224,6 @@ def inference(
             draw_pic(draw_img, out[0])
             cv2.imshow('img', draw_img)
             cv2.waitKey()
-
 
         # fps
         if index >= num_warmup:
@@ -217,14 +235,16 @@ def inference(
                     f'Done image [{index + 1:<3}/ {len(images)}], '
                     f'fps: {fps:.1f} img / s, '
                     f'times per image: {1000 / fps:.1f} ms / img',
-                    flush=True)
+                    flush=True,
+                )
 
         if (index + 1) == len(images) and (index + 1) > num_warmup:
             fps = (index + 1 - num_warmup) / pure_inf_time
             print(
                 f'Overall fps: {fps:.1f} img / s, '
                 f'times per image: {1000 / fps:.1f} ms / img',
-                flush=True)
+                flush=True,
+            )
 
         print("time:{}".format(t2 - t1))
         # print(output)
@@ -232,9 +252,12 @@ def inference(
 
 def parser_args():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--engine', type=str, default='model.engine')
-    parser.add_argument('--data_source', type=str, default='000000.jpg')  # 测试数据源，可以是单张图片，可以是文件夹
+    parser.add_argument(
+        '--data_source', type=str, default='000000.jpg'
+    )  # 测试数据源，可以是单张图片，可以是文件夹
     parser.add_argument('--input_names', type=str, default='input')
     parser.add_argument('--output_names', type=str, default='output')
     parser.add_argument('--cal_fps', action='store_true', default=False)
@@ -257,5 +280,5 @@ if __name__ == '__main__':
         input_names=args.input_names,
         output_names=args.output_names,
         size=(448, 448),
-        cal_fps=args.cal_fps
+        cal_fps=args.cal_fps,
     )

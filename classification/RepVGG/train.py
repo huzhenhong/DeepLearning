@@ -21,11 +21,24 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision
 from torchvision import transforms
 from torchvision.models import resnet50
-from torch.utils.data import DataLoader, Dataset, distributed, dataset, dataloader
+from torch.utils.data import (
+    DataLoader,
+    Dataset,
+    distributed,
+    dataset,
+    dataloader,
+)
 import torch.backends.cudnn as cudnn
 
-from utils import increment_path, torch_distributed_zero_first, reduce_value, save_checkpoint, accuracy, AverageMeter, \
-    ProgressMeter
+from utils import (
+    increment_path,
+    torch_distributed_zero_first,
+    reduce_value,
+    save_checkpoint,
+    accuracy,
+    AverageMeter,
+    ProgressMeter,
+)
 from dataLoader import read_split_data, My_Dataset, My_Dataset_with_txt
 from models import get_RepVGG_func_by_name, func_dict
 
@@ -55,7 +68,12 @@ def parser_args():
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--start_epochs', default=0)
     parser.add_argument("--epochs", type=int, default=120)
-    parser.add_argument("--device", type=str, default='', help="device = 'cpu' or '0' or '0,1,2,3'")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default='',
+        help="device = 'cpu' or '0' or '0,1,2,3'",
+    )
     parser.add_argument('--lr', type=float, default=0.1)
     parser.add_argument("--lrf", type=float, default=0.01)
     parser.add_argument("--print_freq", type=int, default=10)
@@ -101,8 +119,14 @@ def main(config):
 
     # Create logging
     if RANK in {-1, 0}:
-        save_dir = Path(str(increment_path(Path(config["train"]["project"]) / config["train"]["name"],
-                                           exist_ok=config["train"]["exist_ok"])))
+        save_dir = Path(
+            str(
+                increment_path(
+                    Path(config["train"]["project"]) / config["train"]["name"],
+                    exist_ok=config["train"]["exist_ok"],
+                )
+            )
+        )
         save_dir.mkdir(parents=True, exist_ok=True)
 
         weights_dir = save_dir / "weights"
@@ -114,59 +138,114 @@ def main(config):
             yaml.safe_dump(config, f, sort_keys=False)
 
         logging_path = str(save_dir / "train.log")
-        logging.basicConfig(filename=logging_path, level=logging.INFO, filemode="w+")
+        logging.basicConfig(
+            filename=logging_path, level=logging.INFO, filemode="w+"
+        )
         for k, v in config.items():
             logging.info(f"====>  {k}: {v}   <=====")
 
     # Init device
-    device = select_device(config["train"]["device"], config["train"]["batch_size"])
+    device = select_device(
+        config["train"]["device"], config["train"]["batch_size"]
+    )
     if LOCAL_RANK != -1:
-        assert torch.cuda.device_count() > LOCAL_RANK, 'insufficient CUDA devices for DDP command'
+        assert (
+            torch.cuda.device_count() > LOCAL_RANK
+        ), 'insufficient CUDA devices for DDP command'
         print("torch.cuda.device_count():", torch.cuda.device_count())
         torch.cuda.set_device(LOCAL_RANK)
         device = torch.device('cuda', LOCAL_RANK)
-        dist.init_process_group(backend="nccl" if dist.is_nccl_available() else "gloo")
+        dist.init_process_group(
+            backend="nccl" if dist.is_nccl_available() else "gloo"
+        )
 
     cuda = device.type != 'cpu'
 
     # Create data
     data_transform = {
         "train": transforms.Compose(
-            [transforms.RandomResizedCrop(224),
-             transforms.RandomHorizontalFlip(),
-             transforms.ToTensor(),
-             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
+            [
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                ),
+            ]
         ),
         "val": transforms.Compose(
-            [transforms.Resize(256),
-             transforms.CenterCrop(224),
-             transforms.ToTensor(),
-             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
-        )
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                ),
+            ]
+        ),
     }
 
     if RANK in {-1, 0}:
         os.makedirs('data', exist_ok=True)
-        data_info = read_split_data(config["data"]["data_path"], save_dir='data', val_rate=0.2, plot_image=True)
+        data_info = read_split_data(
+            config["data"]["data_path"],
+            save_dir='data',
+            val_rate=0.2,
+            plot_image=True,
+        )
 
     with torch_distributed_zero_first(LOCAL_RANK):
-        train_set = My_Dataset_with_txt('data', "train.txt", transform=data_transform["train"])
-        test_set = My_Dataset_with_txt('data', "val.txt", transform=data_transform["val"])
+        train_set = My_Dataset_with_txt(
+            'data', "train.txt", transform=data_transform["train"]
+        )
+        test_set = My_Dataset_with_txt(
+            'data', "val.txt", transform=data_transform["val"]
+        )
         # train_set.data = train_set.data[:100]
         # test_set.data = test_set.data[:100]
 
-    train_sampler = None if LOCAL_RANK == -1 else distributed.DistributedSampler(train_set, shuffle=True)
-    test_sampler = None if LOCAL_RANK == -1 else distributed.DistributedSampler(test_set, shuffle=False)
+    train_sampler = (
+        None
+        if LOCAL_RANK == -1
+        else distributed.DistributedSampler(train_set, shuffle=True)
+    )
+    test_sampler = (
+        None
+        if LOCAL_RANK == -1
+        else distributed.DistributedSampler(test_set, shuffle=False)
+    )
     print(train_sampler)
 
-    nw = min([os.cpu_count(), config["train"]["batch_size"] if config["train"]["batch_size"] > 1 else 0, 8])
-    train_dataloader = DataLoader(train_set, batch_size=config["train"]["batch_size"], shuffle=train_sampler is None,
-                                  num_workers=nw, sampler=train_sampler, pin_memory=True, drop_last=True,
-                                  collate_fn=train_set.collate_fn)
+    nw = min(
+        [
+            os.cpu_count(),
+            config["train"]["batch_size"]
+            if config["train"]["batch_size"] > 1
+            else 0,
+            8,
+        ]
+    )
+    train_dataloader = DataLoader(
+        train_set,
+        batch_size=config["train"]["batch_size"],
+        shuffle=train_sampler is None,
+        num_workers=nw,
+        sampler=train_sampler,
+        pin_memory=True,
+        drop_last=True,
+        collate_fn=train_set.collate_fn,
+    )
 
-    test_dataloader = DataLoader(test_set, batch_size=config["train"]["batch_size"], shuffle=False,
-                                 num_workers=nw, sampler=test_sampler, pin_memory=True, drop_last=False,
-                                 collate_fn=test_set.collate_fn)
+    test_dataloader = DataLoader(
+        test_set,
+        batch_size=config["train"]["batch_size"],
+        shuffle=False,
+        num_workers=nw,
+        sampler=test_sampler,
+        pin_memory=True,
+        drop_last=False,
+        collate_fn=test_set.collate_fn,
+    )
     nb = len(train_dataloader)
     # warmup_iters = max(round(config["train"]["warmup_epochs"] * nb), 100)
 
@@ -179,25 +258,37 @@ def main(config):
     # Create model
     assert config["train"]["arch"] in func_dict
     model_build_func = get_RepVGG_func_by_name(config["train"]["arch"])
-    model = model_build_func(deploy=False, num_classes=config["train"]["classes"])
+    model = model_build_func(
+        deploy=False, num_classes=config["train"]["classes"]
+    )
 
     # pretrain weights
-    if config["train"]["weights"] is not None and os.path.exists(config["train"]["weights"]):
+    if config["train"]["weights"] is not None and os.path.exists(
+        config["train"]["weights"]
+    ):
         with torch_distributed_zero_first(LOCAL_RANK):
             checkpoint_path = config["train"]["weights"]
 
         ckpt = torch.load(checkpoint_path, map_location='cpu')
-        ckpt_dict = {k: v for k, v in ckpt.items() if model.state_dict()[k].numel() == v.numel()}
+        ckpt_dict = {
+            k: v
+            for k, v in ckpt.items()
+            if model.state_dict()[k].numel() == v.numel()
+        }
         model.load_state_dict(ckpt_dict, strict=False)
     else:
         if RANK != -1:
-            checkpoint_path = os.path.join(tempfile.gettempdir(), "initial_weights.pt")
+            checkpoint_path = os.path.join(
+                tempfile.gettempdir(), "initial_weights.pt"
+            )
 
             if RANK == 0:
                 torch.save(model.state_dict(), checkpoint_path)
 
             dist.barrier()
-            model.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
+            model.load_state_dict(
+                torch.load(checkpoint_path, map_location='cpu')
+            )
 
     model = model.to(device)
 
@@ -216,22 +307,36 @@ def main(config):
 
     # Convert to DDP
     if cuda and RANK != -1:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[LOCAL_RANK], output_device=LOCAL_RANK)
+        model = torch.nn.parallel.DistributedDataParallel(
+            model, device_ids=[LOCAL_RANK], output_device=LOCAL_RANK
+        )
 
     # Optimizer
     # 学习率要根据并行GPU的数量进行倍增
-    lr = config["train"]["lr"] * WORLD_SIZE if RANK != -1 else config["train"]["lr"]
+    lr = (
+        config["train"]["lr"] * WORLD_SIZE
+        if RANK != -1
+        else config["train"]["lr"]
+    )
     pg = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(pg, lr=lr, momentum=0.9, weight_decay=5e-4)
 
     if config["train"]["scheduler"].lower() == 'cosine':
         # Scheduler https://arxiv.org/pdf/1812.01187.pdf
-        lf = lambda x: ((1 + math.cos(x * math.pi / config["train"]["epochs"])) / 2) * (1 - config["train"]["lrf"]) + \
-                       config["train"]["lrf"]  # cosine
+        lf = (
+            lambda x: (
+                (1 + math.cos(x * math.pi / config["train"]["epochs"])) / 2
+            )
+            * (1 - config["train"]["lrf"])
+            + config["train"]["lrf"]
+        )  # cosine
         scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
     elif config["train"]["scheduler"].lower() == 'step':
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=config["train"]["lr_steps"],
-                                                         gamma=config["train"]["lr_gamma"])
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer,
+            milestones=config["train"]["lr_steps"],
+            gamma=config["train"]["lr_gamma"],
+        )
 
     loss_function = torch.nn.CrossEntropyLoss()
 
@@ -242,17 +347,26 @@ def main(config):
     if config["train"]["resume"]:
         if os.path.isfile(config["train"]["resume"]):
             print("=>loading checkpoint {}".format(config["train"]["resume"]))
-            ckpt_dict = torch.load(config["train"]["resume"], map_location=device)
+            ckpt_dict = torch.load(
+                config["train"]["resume"], map_location=device
+            )
 
             config["train"]["start_epochs"] = ckpt_dict["epoch"]
             best_acc = ckpt_dict["best_acc"]
             model.load_state_dict(ckpt_dict["state_dict"])
             optimizer.load_state_dict(ckpt_dict['optimizer'])
             scheduler.load_state_dict(ckpt_dict['scheduler'])
-            print("=> loaded checkpoint '{}' (epoch {})"
-                  .format(config["train"]["resume"], ckpt_dict['epoch']))
+            print(
+                "=> loaded checkpoint '{}' (epoch {})".format(
+                    config["train"]["resume"], ckpt_dict['epoch']
+                )
+            )
         else:
-            print("=> no checkpoint found at '{}'".format(config["train"]["resume"]))
+            print(
+                "=> no checkpoint found at '{}'".format(
+                    config["train"]["resume"]
+                )
+            )
 
     cudnn.benchmark = True
 
@@ -261,7 +375,9 @@ def main(config):
     #     return
 
     # Train
-    for epoch in range(config["train"]["start_epochs"], config["train"]["epochs"]):
+    for epoch in range(
+        config["train"]["start_epochs"], config["train"]["epochs"]
+    ):
         model.train()
 
         batch_time = AverageMeter('Time', ':6.3f')
@@ -280,7 +396,8 @@ def main(config):
         progress = ProgressMeter(
             len(train_dataloader),
             [batch_time, data_time, losses, top1, top5, lr],
-            prefix="Epoch: [{}]".format(epoch))
+            prefix="Epoch: [{}]".format(epoch),
+        )
 
         optimizer.zero_grad()
         lr_scheduler = None
@@ -323,11 +440,16 @@ def main(config):
 
             if RANK in {-1, 0}:
                 pf = '%5s' + '%11i' * 1 + '%11.6g' * 4  # print format
-                logging.info(pf % ('Train', epoch, top1.avg, top5.avg, losses.avg, lr.avg))
+                logging.info(
+                    pf
+                    % ('Train', epoch, top1.avg, top5.avg, losses.avg, lr.avg)
+                )
 
                 if i % config["train"]["print_freq"] == 0:
                     progress.display(i)
-                tb_writer.add_scalar("train_lr", optimizer.param_groups[0]["lr"], ni)
+                tb_writer.add_scalar(
+                    "train_lr", optimizer.param_groups[0]["lr"], ni
+                )
 
         # 等待所有进程计算完毕
         if RANK != -1:
@@ -345,7 +467,8 @@ def main(config):
             progress = ProgressMeter(
                 len(test_dataloader),
                 [batch_time, losses, top1, top5],
-                prefix='Test: ')
+                prefix='Test: ',
+            )
             model.eval()
 
             # sum_num = torch.zeros(1).to(device)
@@ -378,10 +501,21 @@ def main(config):
             tags = ["acc1", "acc5", "learning_rate"]
             tb_writer.add_scalar(tags[0], top1.avg, epoch)
             tb_writer.add_scalar(tags[1], top5.avg, epoch)
-            tb_writer.add_scalar(tags[2], optimizer.param_groups[0]["lr"], epoch)
+            tb_writer.add_scalar(
+                tags[2], optimizer.param_groups[0]["lr"], epoch
+            )
 
             pf = '%5s' + '%11i' * 1 + '%11.6g' * 3  # print format
-            logging.info(pf % ('Test', epoch, top1.avg, top5.avg, optimizer.param_groups[0]['lr']))
+            logging.info(
+                pf
+                % (
+                    'Test',
+                    epoch,
+                    top1.avg,
+                    top5.avg,
+                    optimizer.param_groups[0]['lr'],
+                )
+            )
 
             # Save model
             acc = top1.avg
@@ -412,9 +546,11 @@ def main(config):
                             'optimizer': optimizer.state_dict(),
                             'scheduler': scheduler.state_dict(),
                         },
-                        os.path.join(weights_dir, '{}_best.pth'.format(config["train"]["arch"]))
+                        os.path.join(
+                            weights_dir,
+                            '{}_best.pth'.format(config["train"]["arch"]),
+                        ),
                     )
-
 
             else:
                 if is_best:
@@ -441,7 +577,10 @@ def main(config):
                             'optimizer': optimizer.state_dict(),
                             'scheduler': scheduler.state_dict(),
                         },
-                        os.path.join(weights_dir, '{}_best.pth'.format(config["train"]["arch"]))
+                        os.path.join(
+                            weights_dir,
+                            '{}_best.pth'.format(config["train"]["arch"]),
+                        ),
                     )
 
     logging.info(f"best epoch:{best_epoch}, acc:{best_acc}")

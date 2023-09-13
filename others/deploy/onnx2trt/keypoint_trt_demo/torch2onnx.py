@@ -11,7 +11,14 @@ import torch
 from hrnet import HighResolution as hrnet
 
 
-def export_to_onnx(weights, dummy_input=None, f=None, opset_version=12, simplify=True, dynamic=False):
+def export_to_onnx(
+    weights,
+    dummy_input=None,
+    f=None,
+    opset_version=12,
+    simplify=True,
+    dynamic=False,
+):
     try:
         import onnx
 
@@ -38,9 +45,17 @@ def export_to_onnx(weights, dummy_input=None, f=None, opset_version=12, simplify
             opset_version=opset_version,
             input_names=['input'],
             output_names=['output'],
-            dynamic_axes={'input': {0: 'batch', 2: 'height', 3: 'width'},  # shape(1,3,448,448)
-                          'output': {0: 'batch'}  # shape(1,1,112,112)
-                          } if dynamic else None)
+            dynamic_axes={
+                'input': {
+                    0: 'batch',
+                    2: 'height',
+                    3: 'width',
+                },  # shape(1,3,448,448)
+                'output': {0: 'batch'},  # shape(1,1,112,112)
+            }
+            if dynamic
+            else None,
+        )
         print("export succeed")
 
         # Checks
@@ -52,11 +67,16 @@ def export_to_onnx(weights, dummy_input=None, f=None, opset_version=12, simplify
             try:
                 import onnxsim
 
-                print(f'{f} simplifying with onnx-simplifier {onnxsim.__version__}...')
+                print(
+                    f'{f} simplifying with onnx-simplifier {onnxsim.__version__}...'
+                )
                 model_onnx, check = onnxsim.simplify(
                     model_onnx,
                     dynamic_input_shape=dynamic,
-                    input_shapes={'input': list(dummy_input.shape)} if dynamic else None)
+                    input_shapes={'input': list(dummy_input.shape)}
+                    if dynamic
+                    else None,
+                )
                 assert check, 'assert check failed'
                 onnx.save(model_onnx, f)
             except Exception as e:
@@ -68,6 +88,7 @@ def export_to_onnx(weights, dummy_input=None, f=None, opset_version=12, simplify
 
 def parser_args():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--weight', type=str, default='model.pth')
     parser.add_argument('--f', type=str, default='model.onnx')
@@ -93,5 +114,5 @@ if __name__ == '__main__':
         f=args.f,
         opset_version=args.opset_version,
         simplify=args.simplify,
-        dynamic=args.dynamic
+        dynamic=args.dynamic,
     )

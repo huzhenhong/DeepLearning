@@ -8,7 +8,7 @@ import numpy as np
 import torch
 
 
-def read_split_data(root:str, val_rate:float=0.2):
+def read_split_data(root: str, val_rate: float = 0.2):
     random.seed(0)  # 保证随机结果可复现。 0：随机种子
     assert os.path.exists(root), "dataset root: {} does not exist".format(root)
 
@@ -21,41 +21,62 @@ def read_split_data(root:str, val_rate:float=0.2):
     flower_class.sort()
     # 生成类别对应名称以及对应的数字索引
     # {"daisy":0}
-    class_indices = dict((k, v) for v, k in enumerate(flower_class) if len(flower_class) != 0)
+    class_indices = dict(
+        (k, v) for v, k in enumerate(flower_class) if len(flower_class) != 0
+    )
     # 将类别信息写入json
     # {"0": "daisy"}
-    json_str = json.dumps(dict((val, key) for key, val in class_indices.items()), indent=4)  # indent:缩进格式，保证输出的格式整齐
+    json_str = json.dumps(
+        dict((val, key) for key, val in class_indices.items()), indent=4
+    )  # indent:缩进格式，保证输出的格式整齐
     with open("class_indices.json", 'w') as json_file:
         json_file.write(json_str)
 
-    train_data = {} # 存放训练数据
-    val_data = {}   # 存放验证数据
-    every_class_num = {} # 存放每个类别的图片数量
+    train_data = {}  # 存放训练数据
+    val_data = {}  # 存放验证数据
+    every_class_num = {}  # 存放每个类别的图片数量
     supported = [".jpg", ".JPG", ".png", ".PNG"]  # 支持的文件后缀类型
 
     # 数据处理
     for cla in flower_class:
         cla_path = os.path.join(root, cla)
         # 遍历获取supported支持的所有文件路径
-        images = [os.path.join(cla_path, i) for i in os.listdir(cla_path)
-                  if os.path.splitext(i)[-1] in supported]
+        images = [
+            os.path.join(cla_path, i)
+            for i in os.listdir(cla_path)
+            if os.path.splitext(i)[-1] in supported
+        ]
         # 获取类别对应的索引
         class_id = class_indices[cla]
         # 记录该类别的样本数量
         every_class_num[class_id] = len(images)
         # 按比例随机采样验证样本
-        val_path = random.sample(images, k=int(len(images)*val_rate))
+        val_path = random.sample(images, k=int(len(images) * val_rate))
         train_path = list(set(images) - set(val_path))
         val_data[class_id] = val_path
         train_data[class_id] = train_path
-    print("{} images were found in the dataset.".format(sum(num for num in every_class_num.values())))
-    print("{} images for training.".format(sum(len(num) for num in train_data.values())))
-    print("{} images for validation.".format(sum(len(num) for num in val_data.values())))
+    print(
+        "{} images were found in the dataset.".format(
+            sum(num for num in every_class_num.values())
+        )
+    )
+    print(
+        "{} images for training.".format(
+            sum(len(num) for num in train_data.values())
+        )
+    )
+    print(
+        "{} images for validation.".format(
+            sum(len(num) for num in val_data.values())
+        )
+    )
 
     plot_image = False
     if plot_image:
         # 绘制每种类别个数柱状图
-        plt.bar(range(len(flower_class)), every_class_num.values(), align='center')
+        plt.bar(
+            range(len(flower_class)), every_class_num.values(), align='center'
+        )
         # 将横坐标0,1,2,3,4替换为相应的类别名称
         plt.xticks(range(len(flower_class)), flower_class)
         # 在柱状图上添加数值标签
@@ -96,7 +117,7 @@ def matplotlib_imshow(img, one_channel=False):
         unnorm_img = (img * [0.229, 0.224, 0.225] + [0.485, 0.456, 0.406]) * 255
         img = img.astype('uint8')
         unnorm_img = unnorm_img.astype('uint8')
-        norm_image = torch.Tensor(img).permute(2,0,1)
+        norm_image = torch.Tensor(img).permute(2, 0, 1)
         plt.imshow(unnorm_img)
         plt.savefig("train_images.jpg")
         # plt.show()
@@ -121,7 +142,7 @@ def plot_data_loader_image(data_loader):
             # 反Normalize操作
             img = (img * [0.229, 0.224, 0.225] + [0.485, 0.456, 0.406]) * 255
             label = labels[i].item()
-            plt.subplot(1, plot_num, i+1)
+            plt.subplot(1, plot_num, i + 1)
             plt.xlabel(class_indices[str(label)])
             plt.xticks([])  # 去掉x轴的刻度
             plt.yticks([])  # 去掉y轴的刻度
@@ -129,12 +150,9 @@ def plot_data_loader_image(data_loader):
         plt.show()
 
 
-
-def plot_class_preds(net,
-                     images_dir: str,
-                     transform,
-                     num_plot: int = 5,
-                     device="cpu"):
+def plot_class_preds(
+    net, images_dir: str, transform, num_plot: int = 5, device="cpu"
+):
     if not os.path.exists(images_dir):
         print("not found {} path, ignore add figure.".format(images_dir))
         return None
@@ -146,7 +164,9 @@ def plot_class_preds(net,
 
     # read class_indict
     json_label_path = './class_indices.json'
-    assert os.path.exists(json_label_path), "not found {}".format(json_label_path)
+    assert os.path.exists(json_label_path), "not found {}".format(
+        json_label_path
+    )
     json_file = open(json_label_path, 'r')
     # {"0": "daisy"}
     flower_class = json.load(json_file)
@@ -160,7 +180,9 @@ def plot_class_preds(net,
             line = line.strip()
             if len(line) > 0:
                 split_info = [i for i in line.split(" ") if len(i) > 0]
-                assert len(split_info) == 2, "label format error, expect file_name and class_name"
+                assert (
+                    len(split_info) == 2
+                ), "label format error, expect file_name and class_name"
                 image_name, class_name = split_info
                 image_path = os.path.join(images_dir, image_name)
                 # 如果文件不存在，则跳过
@@ -207,7 +229,7 @@ def plot_class_preds(net,
     fig = plt.figure(figsize=(num_imgs * 2.5, 3), dpi=100)
     for i in range(num_imgs):
         # 1：子图共1行，num_imgs:子图共num_imgs列，当前绘制第i+1个子图
-        ax = fig.add_subplot(1, num_imgs, i+1, xticks=[], yticks=[])
+        ax = fig.add_subplot(1, num_imgs, i + 1, xticks=[], yticks=[])
 
         # CHW -> HWC
         npimg = images[i].cpu().numpy().transpose(1, 2, 0)
@@ -220,7 +242,7 @@ def plot_class_preds(net,
         title = "{}, {:.2f}%\n(label: {})".format(
             flower_class[str(preds[i])],  # predict class
             probs[i] * 100,  # predict probability
-            flower_class[str(labels[i])]  # true class
+            flower_class[str(labels[i])],  # true class
         )
         ax.set_title(title, color=("green" if preds[i] == labels[i] else "red"))
 
@@ -237,7 +259,6 @@ def read_pickle(file_name: str) -> list:
         info_list = pickle.load(f)
         return info_list
 
+
 if __name__ == '__main__':
     read_split_data(root=r"D:\dataset\flow_data\train")
-
-

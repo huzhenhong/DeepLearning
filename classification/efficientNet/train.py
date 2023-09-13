@@ -24,7 +24,9 @@ from utils import matplotlib_imshow, train_one_epoch, evaluate
 def main(opt):
     print(opt)
 
-    assert os.path.exists(opt.data_path), "The Mnist data path:{} does not exists".format(opt.data_path)
+    assert os.path.exists(
+        opt.data_path
+    ), "The Mnist data path:{} does not exists".format(opt.data_path)
 
     tb_writer = SummaryWriter()
     save_dir = tb_writer.log_dir
@@ -32,53 +34,89 @@ def main(opt):
     if not os.path.exists(weights_dir):
         os.makedirs(weights_dir)
 
-    device = torch.device("cuda" if torch.cuda.is_available() and opt.use_cuda else "cpu")
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() and opt.use_cuda else "cpu"
+    )
 
     # 读取数据
-    train_images_path, val_images_path, train_images_label, val_images_label, every_class_num = read_split_data(
-        opt.data_path, save_dir, val_rate=0.2, plot_image=True)
+    (
+        train_images_path,
+        val_images_path,
+        train_images_label,
+        val_images_label,
+        every_class_num,
+    ) = read_split_data(opt.data_path, save_dir, val_rate=0.2, plot_image=True)
 
-    img_size = {"B0": 224,
-                "B1": 240,
-                "B2": 260,
-                "B3": 300,
-                "B4": 380,
-                "B5": 456,
-                "B6": 528,
-                "B7": 600}
+    img_size = {
+        "B0": 224,
+        "B1": 240,
+        "B2": 260,
+        "B3": 300,
+        "B4": 380,
+        "B5": 456,
+        "B6": 528,
+        "B7": 600,
+    }
     num_model = "B0"
 
     data_transform = {
-        "train": transforms.Compose([
-            transforms.RandomResizedCrop(img_size[num_model]),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-        "val": transforms.Compose([
-            transforms.RandomResizedCrop(img_size[num_model]),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])}
+        "train": transforms.Compose(
+            [
+                transforms.RandomResizedCrop(img_size[num_model]),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                ),
+            ]
+        ),
+        "val": transforms.Compose(
+            [
+                transforms.RandomResizedCrop(img_size[num_model]),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                ),
+            ]
+        ),
+    }
 
     # 实例化训练数据集
-    train_dataset = my_Dataset(images_path=train_images_path,
-                               images_class=train_images_label,
-                               transform=data_transform["train"])
+    train_dataset = my_Dataset(
+        images_path=train_images_path,
+        images_class=train_images_label,
+        transform=data_transform["train"],
+    )
 
     # 实例化验证数据集
-    val_dataset = my_Dataset(images_path=val_images_path,
-                             images_class=val_images_label,
-                             transform=data_transform["val"])
+    val_dataset = my_Dataset(
+        images_path=val_images_path,
+        images_class=val_images_label,
+        transform=data_transform["val"],
+    )
 
     batch_size = opt.batch_size
-    nw = min([os.cpu_count(), batch_size, opt.num_worker if batch_size > 1 else 0, 8])  # number of workers
+    nw = min(
+        [os.cpu_count(), batch_size, opt.num_worker if batch_size > 1 else 0, 8]
+    )  # number of workers
     print('Using {} dataloader workers every process'.format(nw))
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True,
-                                               pin_memory=True, num_workers=nw, collate_fn=train_dataset.collate_fn)
-    val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle=False, pin_memory=True,
-                                             num_workers=nw, collate_fn=val_dataset.collate_fn)
+    train_loader = torch.utils.data.DataLoader(
+        dataset=train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        pin_memory=True,
+        num_workers=nw,
+        collate_fn=train_dataset.collate_fn,
+    )
+    val_loader = torch.utils.data.DataLoader(
+        dataset=val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        pin_memory=True,
+        num_workers=nw,
+        collate_fn=val_dataset.collate_fn,
+    )
     num_classes = len(every_class_num)
 
     # 将图片写入tensorboard
@@ -110,20 +148,32 @@ def main(opt):
     #     model.load_state_dict(torch.load(opt.weight, map_location=device), strict=False)
 
     if device.type == 'cuda':
-        graph_inputs = torch.from_numpy(np.random.rand(1, 3, img_size[num_model], img_size[num_model])).type(
-            torch.FloatTensor).cuda()
+        graph_inputs = (
+            torch.from_numpy(
+                np.random.rand(1, 3, img_size[num_model], img_size[num_model])
+            )
+            .type(torch.FloatTensor)
+            .cuda()
+        )
     else:
-        graph_inputs = torch.from_numpy(np.random.rand(1, 3, img_size[num_model], img_size[num_model])).type(torch.FloatTensor)
+        graph_inputs = torch.from_numpy(
+            np.random.rand(1, 3, img_size[num_model], img_size[num_model])
+        ).type(torch.FloatTensor)
     tb_writer.add_graph(model, (graph_inputs,))
 
     if opt.weights != "":
         if os.path.exists(opt.weights):
             weights_dict = torch.load(opt.weights, map_location=device)
-            load_weights_dict = {k: v for k, v in weights_dict.items()
-                                 if model.state_dict()[k].numel() == v.numel()}
+            load_weights_dict = {
+                k: v
+                for k, v in weights_dict.items()
+                if model.state_dict()[k].numel() == v.numel()
+            }
             print(model.load_state_dict(load_weights_dict, strict=False))
         else:
-            raise FileNotFoundError("not found weights file: {}".format(opt.weights))
+            raise FileNotFoundError(
+                "not found weights file: {}".format(opt.weights)
+            )
 
     if opt.freeze_layers:
         for name, para in model.named_parameters():
@@ -135,12 +185,17 @@ def main(opt):
 
     pg = [p for p in model.parameters() if p.requires_grad]
     if opt.optimizer == 'SGD':
-        optimizer = torch.optim.SGD(pg, lr=opt.lr, momentum=0.9, weight_decay=1E-4)
+        optimizer = torch.optim.SGD(
+            pg, lr=opt.lr, momentum=0.9, weight_decay=1e-4
+        )
     else:
         optimizer = torch.optim.Adam(pg, lr=opt.lr, weight_decay=1e-3)
 
     # Scheduler https://arxiv.org/pdf/1812.01187.pdf
-    lf = lambda x: ((1 + math.cos(x * math.pi / opt.epochs)) / 2) * (1 - opt.lrf) + opt.lrf  # cosine
+    lf = (
+        lambda x: ((1 + math.cos(x * math.pi / opt.epochs)) / 2) * (1 - opt.lrf)
+        + opt.lrf
+    )  # cosine
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
     # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [10, 20], 0.1)
     loss_function = torch.nn.CrossEntropyLoss()
@@ -149,13 +204,24 @@ def main(opt):
     best_epoch = 0
     for epoch in range(opt.epochs):
         # train
-        train_loss, train_acc = train_one_epoch(model, train_loader, device, optimizer, loss_function, epoch)
+        train_loss, train_acc = train_one_epoch(
+            model, train_loader, device, optimizer, loss_function, epoch
+        )
         scheduler.step()
 
         # validate
-        val_loss, val_acc = evaluate(model, val_loader, device, loss_function, epoch)
+        val_loss, val_acc = evaluate(
+            model, val_loader, device, loss_function, epoch
+        )
 
-        tags = ["train_loss", "train_acc", "val_loss", "val_acc", "learning_rate", "images"]
+        tags = [
+            "train_loss",
+            "train_acc",
+            "val_loss",
+            "val_acc",
+            "learning_rate",
+            "images",
+        ]
         tb_writer.add_scalar(tags[0], train_loss, epoch)
         tb_writer.add_scalar(tags[1], train_acc, epoch)
         tb_writer.add_scalar(tags[2], val_loss, epoch)
@@ -178,7 +244,9 @@ def main(opt):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # 数据集
-    parser.add_argument('--data-path', type=str, default='./data', help='The Mnist data path')
+    parser.add_argument(
+        '--data-path', type=str, default='./data', help='The Mnist data path'
+    )
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--batch-size', type=int, default=16)
     parser.add_argument('--num-worker', type=int, default=1)
@@ -187,7 +255,12 @@ if __name__ == '__main__':
 
     # resnet34预训练权重
     # https://download.pytorch.org/models/resnet34-333f7ec4.pth
-    parser.add_argument('--weights', type=str, default='./pre_train_model/efficientnetb0.pth', help='initial weights path')  # resnet18.pth
+    parser.add_argument(
+        '--weights',
+        type=str,
+        default='./pre_train_model/efficientnetb0.pth',
+        help='initial weights path',
+    )  # resnet18.pth
     parser.add_argument('--freeze-layers', type=bool, default=False)
     parser.add_argument('--use_cuda', default=True)
     parser.add_argument('--optimizer', type=str, default='SGD')  # Adam

@@ -23,30 +23,30 @@ python torch2onnx.py --weight model.pth --f model.onnx --opset_version 12 --simp
 ```
 """
 #生成静态batchsize的engine
-./trtexec 	
-            --onnx=<onnx_file> \ 						
-            --explicitBatch \ 						
-            --saveEngine=<tensorRT_engine_file> \ 		
-            --workspace=<size_in_megabytes> \ 		
-            --fp16 		
-                                            
+./trtexec
+            --onnx=<onnx_file> \
+            --explicitBatch \
+            --saveEngine=<tensorRT_engine_file> \
+            --workspace=<size_in_megabytes> \
+            --fp16
+
 #生成动态batchsize的engine
-./trtexec 	
-            --onnx=<onnx_file> \					
-            --minShapes=input:<shape_of_min_batch> \ 
-            --optShapes=input:<shape_of_opt_batch> \  	
-            --maxShapes=input:<shape_of_max_batch> \ 	
-            --workspace=<size_in_megabytes> \ 			
-            --saveEngine=<engine_file> \   				
-            --fp16   	
-            
+./trtexec
+            --onnx=<onnx_file> \
+            --minShapes=input:<shape_of_min_batch> \
+            --optShapes=input:<shape_of_opt_batch> \
+            --maxShapes=input:<shape_of_max_batch> \
+            --workspace=<size_in_megabytes> \
+            --saveEngine=<engine_file> \
+            --fp16
+
 trtexec --onnx=xx.onnx --minShapes=input:1x3x224x224 --optShapes=input:4x3x224x224 --maxShapes=input:8x3x224x224 --saveEngine=xx.engine --fp16
 """
 ```
 
 - 法2
 ```
-python  onnx2trt.py 
+python  onnx2trt.py
 ```
 
 ## 模型推理

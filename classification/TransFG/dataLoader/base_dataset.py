@@ -20,9 +20,13 @@ class BasicDataset(Dataset):
         self.images = images
         self.labels = labels
         assert len(self.images) == len(self.labels)
-        logging.info(f"====>  Creating dataset with {len(self.ids)} examples   <=====")
+        logging.info(
+            f"====>  Creating dataset with {len(self.ids)} examples   <====="
+        )
         if len(images) == 0:
-            raise RuntimeError(f"====>  Dataset is empty ,Please check !!!   <=====")
+            raise RuntimeError(
+                f"====>  Dataset is empty ,Please check !!!   <====="
+            )
 
     def __getitem__(self, index):
         """

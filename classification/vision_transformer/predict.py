@@ -13,14 +13,19 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     data_transform = transforms.Compose(
-        [transforms.Resize(256),
-         transforms.CenterCrop(224),
-         transforms.ToTensor(),
-         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+        [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
+        ]
+    )
 
     # load image
     img_path = "./test_img/3.jpeg"
-    assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
+    assert os.path.exists(img_path), "file: '{}' dose not exist.".format(
+        img_path
+    )
     img = Image.open(img_path)
     plt.imshow(img)
     # [N, C, H, W]
@@ -31,7 +36,9 @@ def main():
 
     # read class_indict
     json_path = './class_indices.json'
-    assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
+    assert os.path.exists(json_path), "file: '{}' dose not exist.".format(
+        json_path
+    )
 
     json_file = open(json_path, "r")
     class_indict = json.load(json_file)
@@ -48,8 +55,9 @@ def main():
         predict = torch.softmax(output, dim=0)
         predict_cla = torch.argmax(predict).numpy()
 
-    print_res = "class: {}   prob: {:.3}".format(class_indict[str(predict_cla)],
-                                                 predict[predict_cla].numpy())
+    print_res = "class: {}   prob: {:.3}".format(
+        class_indict[str(predict_cla)], predict[predict_cla].numpy()
+    )
     plt.title(print_res)
     print(print_res)
     plt.show()

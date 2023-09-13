@@ -13,36 +13,47 @@ from losses.labelSmoothing import LabelSmoothing
 
 from torchvision import transforms
 import torch
-from torch.utils.data import DataLoader, RandomSampler, DistributedSampler, SequentialSampler
+from torch.utils.data import (
+    DataLoader,
+    RandomSampler,
+    DistributedSampler,
+    SequentialSampler,
+)
 import torchvision
 import torch.optim as optim
+
 # import torch_optimizer as jettify_optim
 
 # model_name: model
-MODEL = {"ViT-B_16": VisionTransformer,
-         "ViT-B_32": VisionTransformer,
-         "ViT-L_16": VisionTransformer,
-         "ViT-L_32": VisionTransformer,
-         "ViT-H_14": VisionTransformer,
-         "Testing": VisionTransformer}
+MODEL = {
+    "ViT-B_16": VisionTransformer,
+    "ViT-B_32": VisionTransformer,
+    "ViT-L_16": VisionTransformer,
+    "ViT-L_32": VisionTransformer,
+    "ViT-H_14": VisionTransformer,
+    "Testing": VisionTransformer,
+}
 
 # dataset_name: dataset
-DATASET = {"CUB_200_2011": CUB,
-           "car": Cars,
-           "nabirds": NASBirds,
-           "dog": dogs,
-           "INat2017": INat2017,
-           "MySet": MyDataset,
-           }
+DATASET = {
+    "CUB_200_2011": CUB,
+    "car": Cars,
+    "nabirds": NASBirds,
+    "dog": dogs,
+    "INat2017": INat2017,
+    "MySet": MyDataset,
+}
 
 # transfrom_name: transforms
-TRANSFORMS = {"Resize": transforms.Resize,
-              "RandomCrop": transforms.RandomCrop,
-              "CenterCrop": transforms.CenterCrop,
-              "AutoAugImageNetPolicy": AutoAugImageNetPolicy,
-              "RandomHorizontalFlip": transforms.RandomHorizontalFlip,
-              "ToTensor": transforms.ToTensor,
-              "Normalize": transforms.Normalize}
+TRANSFORMS = {
+    "Resize": transforms.Resize,
+    "RandomCrop": transforms.RandomCrop,
+    "CenterCrop": transforms.CenterCrop,
+    "AutoAugImageNetPolicy": AutoAugImageNetPolicy,
+    "RandomHorizontalFlip": transforms.RandomHorizontalFlip,
+    "ToTensor": transforms.ToTensor,
+    "Normalize": transforms.Normalize,
+}
 
 # optimizer_name: optimizer
 OPTIMIZERS = {
@@ -71,12 +82,19 @@ LOSSES = {
 }
 
 
-def build_optim(params_to_optimize, optimizer_params=None, loss_params=None, scheduler_params=None):
+def build_optim(
+    params_to_optimize,
+    optimizer_params=None,
+    loss_params=None,
+    scheduler_params=None,
+):
     if loss_params is not None:
         if 'params' in loss_params:
             weight = loss_params['params']['weight']
             if weight is not None:
-                loss_params["params"]["weight"] = torch.FloatTensor(loss_params['params']['weight']).cuda()
+                loss_params["params"]["weight"] = torch.FloatTensor(
+                    loss_params['params']['weight']
+                ).cuda()
             criterion = LOSSES[loss_params['name']](**loss_params['params'])
         else:
             criterion = LOSSES[loss_params['name']]()
@@ -84,16 +102,24 @@ def build_optim(params_to_optimize, optimizer_params=None, loss_params=None, sch
         criterion = None
 
     if optimizer_params is not None:
-        optimizer = OPTIMIZERS[optimizer_params["name"]](params_to_optimize, **optimizer_params["params"])
+        optimizer = OPTIMIZERS[optimizer_params["name"]](
+            params_to_optimize, **optimizer_params["params"]
+        )
     else:
         optimizer = None
 
     if scheduler_params:
-        scheduler = SCHEDULERS[scheduler_params["name"]](optimizer, **scheduler_params["params"])
+        scheduler = SCHEDULERS[scheduler_params["name"]](
+            optimizer, **scheduler_params["params"]
+        )
     else:
         scheduler = None
 
-    return {"criterion": criterion, "optimizer": optimizer, "scheduler": scheduler}
+    return {
+        "criterion": criterion,
+        "optimizer": optimizer,
+        "scheduler": scheduler,
+    }
 
 
 def build_model(cfg='config/example.yaml', num_classes=20):
@@ -101,11 +127,14 @@ def build_model(cfg='config/example.yaml', num_classes=20):
         config = cfg
     else:
         import yaml
+
         with open(cfg, encoding='utf-8') as f:
             config = yaml.safe_load(f)
 
     model_name = config["model"]["name"]
-    assert model_name in MODEL.keys(), f"model name must in {MODEL.keys()}, but now model name is {model_name}"
+    assert (
+        model_name in MODEL.keys()
+    ), f"model name must in {MODEL.keys()}, but now model name is {model_name}"
     if model_name == 'ViT-B_16':
         config["model"]["patches"]["hidden_size"] = 768
         config["model"]["patches"]["patch_size"] = 16
@@ -144,13 +173,17 @@ def build_model(cfg='config/example.yaml', num_classes=20):
         config["model"]["transformer"]["num_layers"] = 1
 
     smoothing_value = config["train"]["smoothing_value"]
-    model = MODEL[model_name](config, num_classes=num_classes, smoothing_value=smoothing_value)
+    model = MODEL[model_name](
+        config, num_classes=num_classes, smoothing_value=smoothing_value
+    )
 
     np_weights = config["train"]["np_weights"]
     if np_weights is not None:
         if os.path.exists(np_weights):
             model.load_from(np.load(np_weights))
-            logging.info(f"===>  Load pretrain weights from {np_weights}  <====")
+            logging.info(
+                f"===>  Load pretrain weights from {np_weights}  <===="
+            )
     return model
 
 
@@ -159,6 +192,7 @@ def build_transforms(cfg='config/example.yaml', dataset="CUB"):
         config = cfg
     else:
         import yaml
+
         with open(cfg, encoding='utf-8') as f:
             config = yaml.safe_load(f)
 
@@ -242,11 +276,14 @@ def build_transforms(cfg='config/example.yaml', dataset="CUB"):
     return train_transform, val_transform
 
 
-def build_loader(cfg='config/example.yaml', train_transforms=None, val_transforms=None):
+def build_loader(
+    cfg='config/example.yaml', train_transforms=None, val_transforms=None
+):
     if isinstance(cfg, dict):
         config = cfg
     else:
         import yaml
+
         with open(cfg, encoding='utf-8') as f:
             config = yaml.safe_load(f)
 
@@ -256,11 +293,20 @@ def build_loader(cfg='config/example.yaml', train_transforms=None, val_transform
     dataset_name = config["dataset"]["name"]
     data_len = config["train"]["data_len"]
 
-    assert dataset_name in DATASET.keys(), f"dataset name must in {DATASET.keys()}, but now dataset name is {dataset_name}"
+    assert (
+        dataset_name in DATASET.keys()
+    ), f"dataset name must in {DATASET.keys()}, but now dataset name is {dataset_name}"
     if dataset_name == 'CUB_200_2011':
         root = config["dataset"]["root"]
-        trainset = DATASET[dataset_name](root=root, data_len=data_len, train=True, transforms=train_transforms)
-        valset = DATASET[dataset_name](root=root, data_len=data_len, train=False, transforms=val_transforms)
+        trainset = DATASET[dataset_name](
+            root=root,
+            data_len=data_len,
+            train=True,
+            transforms=train_transforms,
+        )
+        valset = DATASET[dataset_name](
+            root=root, data_len=data_len, train=False, transforms=val_transforms
+        )
     elif dataset_name == 'car':
         root = config["dataset"]["root"]
         mat_anno = os.path.join(root, 'devkit/cars_train_annos.mat')
@@ -268,51 +314,102 @@ def build_loader(cfg='config/example.yaml', train_transforms=None, val_transform
         val_data_dir = os.path.join(root, 'cars_test')
         car_names = os.path.join(root, 'devkit/cars_meta.mat')
         cleaned = os.path.join(root, 'cleaned.dat')
-        trainset = DATASET[dataset_name](mat_anno=mat_anno, data_dir=train_data_dir, car_names=car_names,
-                                         data_len=data_len, cleaned=None, transforms=train_transforms)
-        valset = DATASET[dataset_name](mat_anno=mat_anno, data_dir=val_data_dir, car_names=car_names, data_len=data_len,
-                                       cleaned=None, transforms=val_transforms)
+        trainset = DATASET[dataset_name](
+            mat_anno=mat_anno,
+            data_dir=train_data_dir,
+            car_names=car_names,
+            data_len=data_len,
+            cleaned=None,
+            transforms=train_transforms,
+        )
+        valset = DATASET[dataset_name](
+            mat_anno=mat_anno,
+            data_dir=val_data_dir,
+            car_names=car_names,
+            data_len=data_len,
+            cleaned=None,
+            transforms=val_transforms,
+        )
     elif dataset_name == 'dog':
         root = config["dataset"]["root"]
-        trainset = DATASET[dataset_name](root=root, train=True, cropped=False, data_len=data_len,
-                                         transforms=train_transforms,
-                                         download=True)
-        valset = DATASET[dataset_name](root=root, train=False, cropped=False, data_len=data_len,
-                                       transforms=val_transforms, download=True)
+        trainset = DATASET[dataset_name](
+            root=root,
+            train=True,
+            cropped=False,
+            data_len=data_len,
+            transforms=train_transforms,
+            download=True,
+        )
+        valset = DATASET[dataset_name](
+            root=root,
+            train=False,
+            cropped=False,
+            data_len=data_len,
+            transforms=val_transforms,
+            download=True,
+        )
 
     elif dataset_name == 'nabirds':
         root = config["dataset"]["root"]
-        trainset = DATASET[dataset_name](root=root, train=True, transform=train_transforms)
-        valset = DATASET[dataset_name](root=root, train=False, transform=val_transforms)
+        trainset = DATASET[dataset_name](
+            root=root, train=True, transform=train_transforms
+        )
+        valset = DATASET[dataset_name](
+            root=root, train=False, transform=val_transforms
+        )
 
     elif dataset_name == 'INat2017':
         root = config["dataset"]["root"]
-        trainset = DATASET[dataset_name](root=root, split='train', transform=train_transforms)
-        valset = DATASET[dataset_name](root=root, split='val', transform=val_transforms)
+        trainset = DATASET[dataset_name](
+            root=root, split='train', transform=train_transforms
+        )
+        valset = DATASET[dataset_name](
+            root=root, split='val', transform=val_transforms
+        )
 
     elif dataset_name == 'MySet':
         root = config["dataset"]["root"]
-        trainset = DATASET[dataset_name](root=root, data_len=data_len, train=True, transform=train_transforms)
-        valset = DATASET[dataset_name](root=root, data_len=data_len, train=False, transform=val_transforms)
+        trainset = DATASET[dataset_name](
+            root=root, data_len=data_len, train=True, transform=train_transforms
+        )
+        valset = DATASET[dataset_name](
+            root=root, data_len=data_len, train=False, transform=val_transforms
+        )
 
     batch_size = config["train"]["batch_size"]
     nw = config["train"]["num_workers"]
     if config["train"]["local_rank"] not in [-1, 0]:
         torch.distributed.barrier()
 
-    train_sampler = RandomSampler(trainset) if config["train"]["local_rank"] == -1 else DistributedSampler(trainset)
-    test_sampler = SequentialSampler(valset) if config["train"]["local_rank"] == -1 else DistributedSampler(valset)
-    train_loader = DataLoader(trainset,
-                              sampler=train_sampler,
-                              batch_size=batch_size,
-                              num_workers=nw,
-                              drop_last=True,
-                              pin_memory=True)
-    val_loader = DataLoader(valset,
-                            sampler=test_sampler,
-                            batch_size=batch_size,
-                            num_workers=nw,
-                            pin_memory=True) if valset is not None else None
+    train_sampler = (
+        RandomSampler(trainset)
+        if config["train"]["local_rank"] == -1
+        else DistributedSampler(trainset)
+    )
+    test_sampler = (
+        SequentialSampler(valset)
+        if config["train"]["local_rank"] == -1
+        else DistributedSampler(valset)
+    )
+    train_loader = DataLoader(
+        trainset,
+        sampler=train_sampler,
+        batch_size=batch_size,
+        num_workers=nw,
+        drop_last=True,
+        pin_memory=True,
+    )
+    val_loader = (
+        DataLoader(
+            valset,
+            sampler=test_sampler,
+            batch_size=batch_size,
+            num_workers=nw,
+            pin_memory=True,
+        )
+        if valset is not None
+        else None
+    )
     return train_loader, val_loader
 
 
@@ -325,16 +422,20 @@ def display_dataset(data_loader):
 
     for i, data in enumerate(data_loader):
         fig = plt.figure(figsize=(15, 10))
-        img_grid = torchvision.utils.make_grid(data[0], nrow=n_row, padding=padding, pad_value=pad_value)
+        img_grid = torchvision.utils.make_grid(
+            data[0], nrow=n_row, padding=padding, pad_value=pad_value
+        )
         img_grid = img_grid.numpy().transpose((1, 2, 0))
         img_grid = (img_grid * std + mean) * 255.0
         img_grid = img_grid.astype('uint8')[..., ::-1]
 
         plt.imshow(img_grid)
         for index, label in enumerate(data[1]):
-            plt.text(index % n_row * (data[0][0].shape[2] + padding) + padding,
-                     index // 8 * (data[0][0].shape[1] + 2 * padding),
-                     "label:" + str(label.item()))
+            plt.text(
+                index % n_row * (data[0][0].shape[2] + padding) + padding,
+                index // 8 * (data[0][0].shape[1] + 2 * padding),
+                "label:" + str(label.item()),
+            )
         plt.ion()
         plt.pause(1)
         # plt.waitforbuttonpress()
@@ -366,7 +467,9 @@ if __name__ == '__main__':
     train_trans, val_trans = build_transforms(cfg=cfg)
     print(train_trans)
 
-    train_loader, val_loader = build_loader(cfg=cfg, train_transforms=train_trans, val_transforms=val_trans)
+    train_loader, val_loader = build_loader(
+        cfg=cfg, train_transforms=train_trans, val_transforms=val_trans
+    )
     print(train_loader)
 
     display_dataset(train_loader)

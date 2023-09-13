@@ -19,8 +19,15 @@ from dataLoader import build_loader
 from utils.lr_scheduler import build_scheduler
 from utils.optimizer import build_optimizer
 from utils.logger import create_logger
-from utils.torch_utils import load_checkpoint, load_pretrained, save_checkpoint, NativeScalerWithGradNormCount, \
-    auto_resume_helper, reduce_tensor, select_device
+from utils.torch_utils import (
+    load_checkpoint,
+    load_pretrained,
+    save_checkpoint,
+    NativeScalerWithGradNormCount,
+    auto_resume_helper,
+    reduce_tensor,
+    select_device,
+)
 
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))
 RANK = int(os.getenv('RANK', -1))
@@ -28,8 +35,16 @@ WORLD_SIZE = int(os.getenv('WORLD_SIZE', -1))
 
 
 def parse_option():
-    parser = argparse.ArgumentParser('ResNeSt training and evaluation script', add_help=False)
-    parser.add_argument('--cfg', type=str, required=True, metavar="FILE", help='path to config file', )
+    parser = argparse.ArgumentParser(
+        'ResNeSt training and evaluation script', add_help=False
+    )
+    parser.add_argument(
+        '--cfg',
+        type=str,
+        required=True,
+        metavar="FILE",
+        help='path to config file',
+    )
     parser.add_argument(
         "--opts",
         help="Modify config options by adding 'KEY VALUE' pairs. ",
@@ -38,35 +53,82 @@ def parse_option():
     )
 
     # easy config modification
-    parser.add_argument('--num-classes', type=int, help="number of classes", required=True)
-    parser.add_argument('--batch-size', type=int, help="batch size for single GPU")
+    parser.add_argument(
+        '--num-classes', type=int, help="number of classes", required=True
+    )
+    parser.add_argument(
+        '--batch-size', type=int, help="batch size for single GPU"
+    )
     parser.add_argument('--data-path', type=str, help='path to dataset')
-    parser.add_argument('--dataset', type=str, help='dataset "read_from_txt or imagenet"')
-    parser.add_argument('--zip', action='store_true', help='use zipped dataset instead of folder dataset')
-    parser.add_argument('--cache-mode', type=str, default='part', choices=['no', 'full', 'part'],
-                        help='no: no cache, '
-                             'full: cache all data, '
-                             'part: sharding the dataset into nonoverlapping pieces and only cache one piece')
-    parser.add_argument('--pretrained',
-                        help='pretrained weight from checkpoint, could be imagenet22k pretrained weight')
+    parser.add_argument(
+        '--dataset', type=str, help='dataset "read_from_txt or imagenet"'
+    )
+    parser.add_argument(
+        '--zip',
+        action='store_true',
+        help='use zipped dataset instead of folder dataset',
+    )
+    parser.add_argument(
+        '--cache-mode',
+        type=str,
+        default='part',
+        choices=['no', 'full', 'part'],
+        help='no: no cache, '
+        'full: cache all data, '
+        'part: sharding the dataset into nonoverlapping pieces and only cache one piece',
+    )
+    parser.add_argument(
+        '--pretrained',
+        help='pretrained weight from checkpoint, could be imagenet22k pretrained weight',
+    )
     parser.add_argument('--resume', help='resume from checkpoint')
-    parser.add_argument('--accumulation-steps', type=int, help="gradient accumulation steps")
-    parser.add_argument('--disable_amp', action='store_true', help='Disable pytorch amp')
-    parser.add_argument('--amp-opt-level', type=str, choices=['O0', 'O1', 'O2'],
-                        help='mixed precision opt level, if O0, no amp is used (deprecated!)')
-    parser.add_argument('--output', default='output', type=str, metavar='PATH',
-                        help='root of output folder, the full path is <output>/<model_name>/<tag> (default: output)')
+    parser.add_argument(
+        '--accumulation-steps', type=int, help="gradient accumulation steps"
+    )
+    parser.add_argument(
+        '--disable_amp', action='store_true', help='Disable pytorch amp'
+    )
+    parser.add_argument(
+        '--amp-opt-level',
+        type=str,
+        choices=['O0', 'O1', 'O2'],
+        help='mixed precision opt level, if O0, no amp is used (deprecated!)',
+    )
+    parser.add_argument(
+        '--output',
+        default='output',
+        type=str,
+        metavar='PATH',
+        help='root of output folder, the full path is <output>/<model_name>/<tag> (default: output)',
+    )
     parser.add_argument('--tag', help='tag of experiment')
-    parser.add_argument('--eval', action='store_true', help='Perform evaluation only')
-    parser.add_argument('--throughput', action='store_true', help='Test throughput only')
+    parser.add_argument(
+        '--eval', action='store_true', help='Perform evaluation only'
+    )
+    parser.add_argument(
+        '--throughput', action='store_true', help='Test throughput only'
+    )
 
     # distributed training
-    parser.add_argument("--local_rank", type=int, default=-1, help='local rank for DistributedDataParallel')
-    parser.add_argument("--device", type=str, default='', help="device = 'cpu' or '0' or '0,1,2,3'")
+    parser.add_argument(
+        "--local_rank",
+        type=int,
+        default=-1,
+        help='local rank for DistributedDataParallel',
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default='',
+        help="device = 'cpu' or '0' or '0,1,2,3'",
+    )
 
     ## overwrite optimizer in config (*.yaml) if specified, e.g., fused_adam/fused_lamb
-    parser.add_argument('--optim', type=str,
-                        help='overwrite optimizer if provided, can be adamw/sgd/fused_adam/fused_lamb.')
+    parser.add_argument(
+        '--optim',
+        type=str,
+        help='overwrite optimizer if provided, can be adamw/sgd/fused_adam/fused_lamb.',
+    )
 
     args, unparsed = parser.parse_known_args()
 
@@ -76,7 +138,13 @@ def parse_option():
 
 
 def main(config):
-    dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config)
+    (
+        dataset_train,
+        dataset_val,
+        data_loader_train,
+        data_loader_val,
+        mixup_fn,
+    ) = build_loader(config)
 
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
     model = build_model(config)
@@ -93,20 +161,32 @@ def main(config):
 
     optimizer = build_optimizer(config, model)
     if RANK != -1:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[LOCAL_RANK], output_device=LOCAL_RANK,
-                                                          broadcast_buffers=False)
+        model = torch.nn.parallel.DistributedDataParallel(
+            model,
+            device_ids=[LOCAL_RANK],
+            output_device=LOCAL_RANK,
+            broadcast_buffers=False,
+        )
     loss_scaler = NativeScalerWithGradNormCount()
 
     if config.TRAIN.ACCUMULATION_STEPS > 1:
-        lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train) // config.TRAIN.ACCUMULATION_STEPS)
+        lr_scheduler = build_scheduler(
+            config,
+            optimizer,
+            len(data_loader_train) // config.TRAIN.ACCUMULATION_STEPS,
+        )
     else:
-        lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train))
+        lr_scheduler = build_scheduler(
+            config, optimizer, len(data_loader_train)
+        )
 
-    if config.AUG.MIXUP > 0.:
+    if config.AUG.MIXUP > 0.0:
         # smoothing is handled with mixup label transform
         criterion = SoftTargetCrossEntropy()
-    elif config.MODEL.LABEL_SMOOTHING > 0.:
-        criterion = LabelSmoothingCrossEntropy(smoothing=config.MODEL.LABEL_SMOOTHING)
+    elif config.MODEL.LABEL_SMOOTHING > 0.0:
+        criterion = LabelSmoothingCrossEntropy(
+            smoothing=config.MODEL.LABEL_SMOOTHING
+        )
     else:
         criterion = torch.nn.CrossEntropyLoss()
 
@@ -116,25 +196,40 @@ def main(config):
         resume_file = auto_resume_helper(config.OUTPUT)
         if resume_file:
             if config.MODEL.RESUME:
-                logger.warning(f"auto-resume changing resume file from {config.MODEL.RESUME} to {resume_file}")
+                logger.warning(
+                    f"auto-resume changing resume file from {config.MODEL.RESUME} to {resume_file}"
+                )
             config.defrost()
             config.MODEL.RESUME = resume_file
             config.freeze()
             logger.info(f'auto resuming from {resume_file}')
         else:
-            logger.info(f'no checkpoint found in {config.OUTPUT}, ignoring auto resume')
+            logger.info(
+                f'no checkpoint found in {config.OUTPUT}, ignoring auto resume'
+            )
 
     if config.MODEL.RESUME:
-        max_accuracy = load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, loss_scaler, logger)
+        max_accuracy = load_checkpoint(
+            config,
+            model_without_ddp,
+            optimizer,
+            lr_scheduler,
+            loss_scaler,
+            logger,
+        )
         acc1, acc5, loss = validate(config, data_loader_val, model)
-        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        logger.info(
+            f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
+        )
         if config.EVAL_MODE:
             return
 
     if config.MODEL.PRETRAINED and (not config.MODEL.RESUME):
         load_pretrained(config, model_without_ddp, logger)
         acc1, acc5, loss = validate(config, data_loader_val, model)
-        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        logger.info(
+            f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
+        )
 
     if config.THROUGHPUT_MODE:
         throughput(data_loader_val, model, logger)
@@ -146,14 +241,35 @@ def main(config):
         if RANK != -1:
             data_loader_train.sampler.set_epoch(epoch)
 
-        train_one_epoch(config, model, criterion, data_loader_train, optimizer, epoch, mixup_fn, lr_scheduler,
-                        loss_scaler)
-        if RANK in [-1, 0] and (epoch % config.SAVE_FREQ == 0 or epoch == (config.TRAIN.EPOCHS - 1)):
-            save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, loss_scaler,
-                            logger)
+        train_one_epoch(
+            config,
+            model,
+            criterion,
+            data_loader_train,
+            optimizer,
+            epoch,
+            mixup_fn,
+            lr_scheduler,
+            loss_scaler,
+        )
+        if RANK in [-1, 0] and (
+            epoch % config.SAVE_FREQ == 0 or epoch == (config.TRAIN.EPOCHS - 1)
+        ):
+            save_checkpoint(
+                config,
+                epoch,
+                model_without_ddp,
+                max_accuracy,
+                optimizer,
+                lr_scheduler,
+                loss_scaler,
+                logger,
+            )
 
         acc1, acc5, loss = validate(config, data_loader_val, model)
-        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        logger.info(
+            f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
+        )
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
 
@@ -162,7 +278,17 @@ def main(config):
     logger.info('Training time {}'.format(total_time_str))
 
 
-def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mixup_fn, lr_scheduler, loss_scaler):
+def train_one_epoch(
+    config,
+    model,
+    criterion,
+    data_loader,
+    optimizer,
+    epoch,
+    mixup_fn,
+    lr_scheduler,
+    loss_scaler,
+):
     model.train()
     optimizer.zero_grad()
 
@@ -188,13 +314,22 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
         loss = loss / config.TRAIN.ACCUMULATION_STEPS
 
         # this attribute is added by timm on one optimizer (adahessian)
-        is_second_order = hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
-        grad_norm = loss_scaler(loss, optimizer, clip_grad=config.TRAIN.CLIP_GRAD,
-                                parameters=model.parameters(), create_graph=is_second_order,
-                                update_grad=(idx + 1) % config.TRAIN.ACCUMULATION_STEPS == 0)
+        is_second_order = (
+            hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
+        )
+        grad_norm = loss_scaler(
+            loss,
+            optimizer,
+            clip_grad=config.TRAIN.CLIP_GRAD,
+            parameters=model.parameters(),
+            create_graph=is_second_order,
+            update_grad=(idx + 1) % config.TRAIN.ACCUMULATION_STEPS == 0,
+        )
         if (idx + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
             optimizer.zero_grad()
-            lr_scheduler.step_update((epoch * num_steps + idx) // config.TRAIN.ACCUMULATION_STEPS)
+            lr_scheduler.step_update(
+                (epoch * num_steps + idx) // config.TRAIN.ACCUMULATION_STEPS
+            )
         loss_scale_value = loss_scaler.state_dict()["scale"]
 
         torch.cuda.synchronize()
@@ -218,9 +353,12 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                 f'loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
                 f'grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t'
                 f'loss_scale {scaler_meter.val:.4f} ({scaler_meter.avg:.4f})\t'
-                f'mem {memory_used:.0f}MB')
+                f'mem {memory_used:.0f}MB'
+            )
     epoch_time = time.time() - start
-    logger.info(f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}")
+    logger.info(
+        f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}"
+    )
 
 
 @torch.no_grad()
@@ -267,7 +405,8 @@ def validate(config, data_loader, model):
                 f'Loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
                 f'Acc@1 {acc1_meter.val:.3f} ({acc1_meter.avg:.3f})\t'
                 f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
-                f'Mem {memory_used:.0f}MB')
+                f'Mem {memory_used:.0f}MB'
+            )
     logger.info(f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}')
     return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
 
@@ -288,7 +427,9 @@ def throughput(data_loader, model, logger):
             model(images)
         torch.cuda.synchronize()
         tic2 = time.time()
-        logger.info(f"batch_size {batch_size} throughput {30 * batch_size / (tic2 - tic1)}")
+        logger.info(
+            f"batch_size {batch_size} throughput {30 * batch_size / (tic2 - tic1)}"
+        )
         return
 
 
@@ -296,7 +437,9 @@ if __name__ == '__main__':
     args, config = parse_option()
 
     if config.AMP_OPT_LEVEL:
-        print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
+        print(
+            "[warning] Apex amp has been deprecated, please use pytorch amp instead!"
+        )
 
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
         RANK = int(os.environ["RANK"])
@@ -306,12 +449,21 @@ if __name__ == '__main__':
         RANK = -1
         WORLD_SIZE = -1
 
-    device = select_device(device=config.DEVICE, batch_size=config.DATA.BATCH_SIZE)
+    device = select_device(
+        device=config.DEVICE, batch_size=config.DATA.BATCH_SIZE
+    )
     if RANK != -1:
-        assert torch.cuda.device_count() > LOCAL_RANK, 'insufficient CUDA devices for DDP command'
+        assert (
+            torch.cuda.device_count() > LOCAL_RANK
+        ), 'insufficient CUDA devices for DDP command'
         torch.cuda.set_device(LOCAL_RANK)
         device = torch.device('cuda', LOCAL_RANK)
-        torch.distributed.init_process_group(backend='nccl', init_method='env://', world_size=WORLD_SIZE, rank=RANK)
+        torch.distributed.init_process_group(
+            backend='nccl',
+            init_method='env://',
+            world_size=WORLD_SIZE,
+            rank=RANK,
+        )
         torch.distributed.barrier()
 
     seed = config.SEED + dist.get_rank() if RANK != -1 else config.SEED
@@ -323,14 +475,24 @@ if __name__ == '__main__':
 
     # linear scale the learning rate according to total batch size, may not be optimal
     world_size = dist.get_world_size() if RANK != -1 else 1
-    linear_scaled_lr = config.TRAIN.BASE_LR * config.DATA.BATCH_SIZE * world_size / 512.0
-    linear_scaled_warmup_lr = config.TRAIN.WARMUP_LR * config.DATA.BATCH_SIZE * world_size / 512.0
-    linear_scaled_min_lr = config.TRAIN.MIN_LR * config.DATA.BATCH_SIZE * world_size / 512.0
+    linear_scaled_lr = (
+        config.TRAIN.BASE_LR * config.DATA.BATCH_SIZE * world_size / 512.0
+    )
+    linear_scaled_warmup_lr = (
+        config.TRAIN.WARMUP_LR * config.DATA.BATCH_SIZE * world_size / 512.0
+    )
+    linear_scaled_min_lr = (
+        config.TRAIN.MIN_LR * config.DATA.BATCH_SIZE * world_size / 512.0
+    )
     # gradient accumulation also need to scale the learning rate
     if config.TRAIN.ACCUMULATION_STEPS > 1:
         linear_scaled_lr = linear_scaled_lr * config.TRAIN.ACCUMULATION_STEPS
-        linear_scaled_warmup_lr = linear_scaled_warmup_lr * config.TRAIN.ACCUMULATION_STEPS
-        linear_scaled_min_lr = linear_scaled_min_lr * config.TRAIN.ACCUMULATION_STEPS
+        linear_scaled_warmup_lr = (
+            linear_scaled_warmup_lr * config.TRAIN.ACCUMULATION_STEPS
+        )
+        linear_scaled_min_lr = (
+            linear_scaled_min_lr * config.TRAIN.ACCUMULATION_STEPS
+        )
     config.defrost()
     config.TRAIN.BASE_LR = linear_scaled_lr
     config.TRAIN.WARMUP_LR = linear_scaled_warmup_lr
@@ -339,7 +501,11 @@ if __name__ == '__main__':
 
     os.makedirs(config.OUTPUT, exist_ok=True)
     dist_rank = dist.get_rank() if RANK != -1 else 0
-    logger = create_logger(output_dir=config.OUTPUT, dist_rank=dist_rank, name=f"{config.MODEL.NAME}")
+    logger = create_logger(
+        output_dir=config.OUTPUT,
+        dist_rank=dist_rank,
+        name=f"{config.MODEL.NAME}",
+    )
 
     if dist_rank == 0:
         path = os.path.join(config.OUTPUT, "config.json")

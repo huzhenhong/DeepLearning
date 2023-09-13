@@ -24,14 +24,14 @@ def save_anno_to_xml(filename, size, objs, save_path):
         E.source(
             E.database("The VOC Database"),
             E.annotation("PASCAL VOC"),
-            E.image("flickr")
+            E.image("flickr"),
         ),
         E.size(
             E.width(size['width']),
             E.height(size['height']),
-            E.depth(size['depth'])
+            E.depth(size['depth']),
         ),
-        E.segmented(0)
+        E.segmented(0),
     )
     for obj in objs:
         E2 = objectify.ElementMaker(annotate=False)
@@ -41,11 +41,8 @@ def save_anno_to_xml(filename, size, objs, save_path):
             E.truncated(0),
             E.difficult(0),
             E.bndbox(
-                E.xmin(obj[1]),
-                E.ymin(obj[2]),
-                E.xmax(obj[3]),
-                E.ymax(obj[4])
-            )
+                E.xmin(obj[1]), E.ymin(obj[2]), E.xmax(obj[3]), E.ymax(obj[4])
+            ),
         )
         anno_tree.append(anno_tree2)
     anno_path = os.path.join(save_path, filename[:-3] + "xml")
@@ -88,7 +85,9 @@ def load_coco(anno_file, xml_save_path):
 
 
 def parseJsonFile(data_dir, xmls_save_path):
-    assert os.path.exists(data_dir), "data dir:{} does not exits".format(data_dir)
+    assert os.path.exists(data_dir), "data dir:{} does not exits".format(
+        data_dir
+    )
 
     if os.path.isdir(data_dir):
         data_types = ['train2017', 'val2017']
@@ -111,8 +110,20 @@ if __name__ == '__main__':
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--data-dir', type=str, default='./data/labels/coco/train.json', help='json path')
-    parser.add_argument('-s', '--save-path', type=str, default='./data/convert/voc', help='xml save path')
+    parser.add_argument(
+        '-d',
+        '--data-dir',
+        type=str,
+        default='./data/labels/coco/train.json',
+        help='json path',
+    )
+    parser.add_argument(
+        '-s',
+        '--save-path',
+        type=str,
+        default='./data/convert/voc',
+        help='xml save path',
+    )
     opt = parser.parse_args()
     print(opt)
 

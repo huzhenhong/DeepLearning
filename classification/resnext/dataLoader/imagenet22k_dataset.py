@@ -10,7 +10,9 @@ warnings.filterwarnings("ignore", "(Possibly )?corrupt EXIF data", UserWarning)
 
 
 class IN22KDATASET(data.Dataset):
-    def __init__(self, root, ann_file='', transform=None, target_transform=None):
+    def __init__(
+        self, root, ann_file='', transform=None, target_transform=None
+    ):
         super(IN22KDATASET, self).__init__()
 
         self.data_path = root

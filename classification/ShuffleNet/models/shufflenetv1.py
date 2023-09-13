@@ -43,19 +43,40 @@ class ResidualBlock(nn.Module):
         self.groups = groups
 
         # 1x1GConv + BN + Relu
-        self.group_conv1 = nn.Conv2d(inplanes, bottleneck_channels, kernel_size=1, stride=1, padding=0, groups=groups,
-                                     bias=False)
+        self.group_conv1 = nn.Conv2d(
+            inplanes,
+            bottleneck_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            groups=groups,
+            bias=False,
+        )
         self.bn1 = nn.BatchNorm2d(bottleneck_channels)
         self.relu = nn.ReLU(inplace=True)
 
         # 3x3DWConv + BN
-        self.depthwise_conv3 = nn.Conv2d(bottleneck_channels, bottleneck_channels, kernel_size=3, stride=stride,
-                                         padding=1, groups=bottleneck_channels, bias=False)
+        self.depthwise_conv3 = nn.Conv2d(
+            bottleneck_channels,
+            bottleneck_channels,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            groups=bottleneck_channels,
+            bias=False,
+        )
         self.bn2 = nn.BatchNorm2d(bottleneck_channels)
 
         # 1x1GConv + BN
-        self.group_conv = nn.Conv2d(bottleneck_channels, planes, kernel_size=1, stride=1, padding=0, groups=groups,
-                                    bias=False)
+        self.group_conv = nn.Conv2d(
+            bottleneck_channels,
+            planes,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            groups=groups,
+            bias=False,
+        )
         self.bn3 = nn.BatchNorm2d(planes)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -83,44 +104,77 @@ class ResidualBlock(nn.Module):
 
 
 class ShuffleNetv1(nn.Module):
-    def __init__(self,
-                 stages_repeats: List[int] = [3, 7, 3],
-                 stages_out_channels: List[int] = [3, 24, 240, 480, 960],
-                 groups: int = 3,
-                 ratio: float = 1.,
-                 num_classes: int = 1000):
-
+    def __init__(
+        self,
+        stages_repeats: List[int] = [3, 7, 3],
+        stages_out_channels: List[int] = [3, 24, 240, 480, 960],
+        groups: int = 3,
+        ratio: float = 1.0,
+        num_classes: int = 1000,
+    ):
         super(ShuffleNetv1, self).__init__()
 
         if len(stages_repeats) != 3:
-            raise ValueError("expected stages_repeats as list of 3 positive ints")
+            raise ValueError(
+                "expected stages_repeats as list of 3 positive ints"
+            )
 
         if len(stages_out_channels) != 5:
-            raise ValueError("expected stages_out_channels as list of 5 positive ints")
+            raise ValueError(
+                "expected stages_out_channels as list of 5 positive ints"
+            )
 
         stages_out_channels = [int(x * ratio) for x in stages_out_channels]
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(3, stages_out_channels[1], kernel_size=3, stride=2, padding=1, bias=False),
+            nn.Conv2d(
+                3,
+                stages_out_channels[1],
+                kernel_size=3,
+                stride=2,
+                padding=1,
+                bias=False,
+            ),
             nn.BatchNorm2d(stages_out_channels[1]),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         # NOTE: Do not use group convolution for the first conv1x1 in Stage 2.
-        self.stage2 = self._make_stage(ResidualBlock, stages_out_channels[1], stages_out_channels[2],
-                                       blocks=stages_repeats[0], stride=2, groups=groups, conv_group=False)
-        self.stage3 = self._make_stage(ResidualBlock, stages_out_channels[2], stages_out_channels[3],
-                                       blocks=stages_repeats[1], stride=2, groups=groups)
-        self.stage4 = self._make_stage(ResidualBlock, stages_out_channels[3], stages_out_channels[4],
-                                       blocks=stages_repeats[2], stride=2, groups=groups)
+        self.stage2 = self._make_stage(
+            ResidualBlock,
+            stages_out_channels[1],
+            stages_out_channels[2],
+            blocks=stages_repeats[0],
+            stride=2,
+            groups=groups,
+            conv_group=False,
+        )
+        self.stage3 = self._make_stage(
+            ResidualBlock,
+            stages_out_channels[2],
+            stages_out_channels[3],
+            blocks=stages_repeats[1],
+            stride=2,
+            groups=groups,
+        )
+        self.stage4 = self._make_stage(
+            ResidualBlock,
+            stages_out_channels[3],
+            stages_out_channels[4],
+            blocks=stages_repeats[2],
+            stride=2,
+            groups=groups,
+        )
 
         self.fc = nn.Linear(stages_out_channels[4], num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu'
+                )
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -139,10 +193,24 @@ class ShuffleNetv1(nn.Module):
         return x
 
     # NOTE: Do not use group convolution for the first conv1x1 in Stage 2.
-    def _make_stage(self, block, inplanes: int, planes: int, blocks: int, stride: int = 2,
-                    groups: int = 3, conv_group=True) -> nn.Sequential:
-
-        layers = [block(inplanes, planes, stride=stride, groups=groups if conv_group else 1)]
+    def _make_stage(
+        self,
+        block,
+        inplanes: int,
+        planes: int,
+        blocks: int,
+        stride: int = 2,
+        groups: int = 3,
+        conv_group=True,
+    ) -> nn.Sequential:
+        layers = [
+            block(
+                inplanes,
+                planes,
+                stride=stride,
+                groups=groups if conv_group else 1,
+            )
+        ]
 
         for _ in range(blocks):
             layers.append(block(planes, planes, stride=1, groups=groups))
@@ -151,41 +219,61 @@ class ShuffleNetv1(nn.Module):
 
 
 def shufflenet_v1_x1_g1(num_classes=1000, ratio: float = 1.0):
-    model = ShuffleNetv1(stages_repeats=[3, 7, 3],
-                         stages_out_channels=[3, 24, 144, 288, 576],
-                         groups=1, ratio=ratio, num_classes=num_classes)
+    model = ShuffleNetv1(
+        stages_repeats=[3, 7, 3],
+        stages_out_channels=[3, 24, 144, 288, 576],
+        groups=1,
+        ratio=ratio,
+        num_classes=num_classes,
+    )
 
     return model
 
 
 def shufflenet_v1_x1_g2(num_classes=1000, ratio: float = 1.0):
-    model = ShuffleNetv1(stages_repeats=[3, 7, 3],
-                         stages_out_channels=[3, 24, 200, 400, 800],
-                         groups=2, ratio=ratio, num_classes=num_classes)
+    model = ShuffleNetv1(
+        stages_repeats=[3, 7, 3],
+        stages_out_channels=[3, 24, 200, 400, 800],
+        groups=2,
+        ratio=ratio,
+        num_classes=num_classes,
+    )
 
     return model
 
 
 def shufflenet_v1_x1_g3(num_classes=1000, ratio: float = 1.0):
-    model = ShuffleNetv1(stages_repeats=[3, 7, 3],
-                         stages_out_channels=[3, 24, 240, 480, 960],
-                         groups=3, ratio=ratio, num_classes=num_classes)
+    model = ShuffleNetv1(
+        stages_repeats=[3, 7, 3],
+        stages_out_channels=[3, 24, 240, 480, 960],
+        groups=3,
+        ratio=ratio,
+        num_classes=num_classes,
+    )
 
     return model
 
 
 def shufflenet_v1_x1_g4(num_classes=1000, ratio: float = 1.0):
-    model = ShuffleNetv1(stages_repeats=[3, 7, 3],
-                         stages_out_channels=[3, 24, 272, 544, 1088],
-                         groups=4, ratio=ratio, num_classes=num_classes)
+    model = ShuffleNetv1(
+        stages_repeats=[3, 7, 3],
+        stages_out_channels=[3, 24, 272, 544, 1088],
+        groups=4,
+        ratio=ratio,
+        num_classes=num_classes,
+    )
 
     return model
 
 
 def shufflenet_v1_x1_g8(num_classes=1000, ratio: float = 1.0):
-    model = ShuffleNetv1(stages_repeats=[3, 7, 3],
-                         stages_out_channels=[3, 24, 384, 768, 1536],
-                         groups=8, ratio=ratio, num_classes=num_classes)
+    model = ShuffleNetv1(
+        stages_repeats=[3, 7, 3],
+        stages_out_channels=[3, 24, 384, 768, 1536],
+        groups=8,
+        ratio=ratio,
+        num_classes=num_classes,
+    )
 
     return model
 

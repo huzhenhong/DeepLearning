@@ -10,26 +10,26 @@
 ```
 def export(
            model,  # pytorch模型 (torch.nn.Module, torch.jit.ScriptModule or torch.jit.ScriptFunction)
-           args,   # 模型输入 args = (x, y, z) 或者 args = torch.Tensor([1, 2, 3]) 
+           args,   # 模型输入 args = (x, y, z) 或者 args = torch.Tensor([1, 2, 3])
            f,      # 模型输出 xxx.onnx 一个文件类对象或一个路径字符串，二进制的protocol buffer将被写入此文件
            export_params=True,  # 是否存储模型权重，如果为True则导出模型的参数。如果想导出一个未训练的模型，则设为False
            verbose=False,       # 如果为True，则打印一些转换日志，并且onnx模型中会包含doc_string信息。
            training=TrainingMode.EVAL, # (enum, default TrainingMode.EVAL)
            input_names=None,  # 按顺序分配给onnx图的输入节点的名称列表。
            output_names=None, # 按顺序分配给onnx图的输出节点的名称列表。
-           aten=False, 
-           export_raw_ir=False, 
-           operator_export_type=None, 
+           aten=False,
+           export_raw_ir=False,
+           operator_export_type=None,
            opset_version=None, # 算子版本，默认是9。值必须等于_onnx_main_opset或在_onnx_stable_opsets之内。具体可在torch/onnx/symbolic_helper.py中找到
-           _retain_param_name=True, 
-           do_constant_folding=True, 
-           example_outputs=None, 
-           strip_doc_string=True, 
+           _retain_param_name=True,
+           do_constant_folding=True,
+           example_outputs=None,
+           strip_doc_string=True,
            dynamic_axes=None,  # 设置动态的维度
-           keep_initializers_as_inputs=None, 
-           custom_opsets=None, 
-           enable_onnx_checker=True, 
-           use_external_data_format=False): 
+           keep_initializers_as_inputs=None,
+           custom_opsets=None,
+           enable_onnx_checker=True,
+           use_external_data_format=False):
 ```
 
 ### 代码示例

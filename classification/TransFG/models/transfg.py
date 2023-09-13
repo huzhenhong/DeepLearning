@@ -31,9 +31,7 @@ def swish(x):
     return x * torch.sigmoid(x)
 
 
-ACTION2FN = {"gelu": torch.nn.GELU(),
-             "relu": torch.nn.ReLU(),
-             "swish": swish}
+ACTION2FN = {"gelu": torch.nn.GELU(), "relu": torch.nn.ReLU(), "swish": swish}
 
 
 class Embeddings(nn.Module):
@@ -41,15 +39,16 @@ class Embeddings(nn.Module):
     Construct the embeddings from patch, position embeddings.
     """
 
-    def __init__(self,
-                 in_channel=3,
-                 img_size=224,
-                 patch_size=16,
-                 slide_step=12,
-                 split_type='non-overlap',
-                 hidden_size=768,
-                 dropout_rate=0.1,
-                 ):
+    def __init__(
+        self,
+        in_channel=3,
+        img_size=224,
+        patch_size=16,
+        slide_step=12,
+        split_type='non-overlap',
+        hidden_size=768,
+        dropout_rate=0.1,
+    ):
         super(Embeddings, self).__init__()
         if isinstance(img_size, int):
             img_size = (img_size, img_size)
@@ -59,12 +58,28 @@ class Embeddings(nn.Module):
         self.hybrid = None
 
         if split_type == 'non-overlap':
-            n_patches = (img_size[0] // patch_size) * (img_size[1] // patch_size)
-            self.patch_embeddings = nn.Conv2d(in_channel, hidden_size, kernel_size=patch_size, stride=patch_size)
+            n_patches = (img_size[0] // patch_size) * (
+                img_size[1] // patch_size
+            )
+            self.patch_embeddings = nn.Conv2d(
+                in_channel,
+                hidden_size,
+                kernel_size=patch_size,
+                stride=patch_size,
+            )
         elif split_type == 'overlap':
-            n_patches = ((img_size[0] - patch_size) // slide_step + 1) * ((img_size[1] - patch_size) // slide_step + 1)
-            self.patch_embeddings = nn.Conv2d(in_channel, hidden_size, kernel_size=patch_size, stride=slide_step)
-        self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches + 1, hidden_size))
+            n_patches = ((img_size[0] - patch_size) // slide_step + 1) * (
+                (img_size[1] - patch_size) // slide_step + 1
+            )
+            self.patch_embeddings = nn.Conv2d(
+                in_channel,
+                hidden_size,
+                kernel_size=patch_size,
+                stride=slide_step,
+            )
+        self.position_embeddings = nn.Parameter(
+            torch.zeros(1, n_patches + 1, hidden_size)
+        )
         self.cls_token = nn.Parameter(torch.zeros(1, 1, hidden_size))
         self.dropout = nn.Dropout(dropout_rate)
 
@@ -84,29 +99,40 @@ class Embeddings(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self,
-                 num_layers=12,
-                 hidden_size=768,
-                 num_attention_heads=12,
-                 mlp_dim=3072,
-                 action='gelu',
-                 dropout_rate=0.1,
-                 attention_dropout_rate=0,
-                 proj_dropout_rate=0,
-                 ):
+    def __init__(
+        self,
+        num_layers=12,
+        hidden_size=768,
+        num_attention_heads=12,
+        mlp_dim=3072,
+        action='gelu',
+        dropout_rate=0.1,
+        attention_dropout_rate=0,
+        proj_dropout_rate=0,
+    ):
         super(Encoder, self).__init__()
         self.layer = nn.ModuleList()
         for _ in range(num_layers - 1):
-            layer = Block(hidden_size=hidden_size, mlp_dim=mlp_dim, num_attention_heads=num_attention_heads,
-                          action=action,
-                          dropout_rate=dropout_rate, attention_dropout_rate=attention_dropout_rate,
-                          proj_dropout_rate=proj_dropout_rate)
+            layer = Block(
+                hidden_size=hidden_size,
+                mlp_dim=mlp_dim,
+                num_attention_heads=num_attention_heads,
+                action=action,
+                dropout_rate=dropout_rate,
+                attention_dropout_rate=attention_dropout_rate,
+                proj_dropout_rate=proj_dropout_rate,
+            )
             self.layer.append(copy.deepcopy(layer))
         self.part_select = Part_Attention()
-        self.part_layer = Block(hidden_size=hidden_size, mlp_dim=mlp_dim, num_attention_heads=num_attention_heads,
-                                action=action,
-                                dropout_rate=dropout_rate, attention_dropout_rate=attention_dropout_rate,
-                                proj_dropout_rate=proj_dropout_rate)
+        self.part_layer = Block(
+            hidden_size=hidden_size,
+            mlp_dim=mlp_dim,
+            num_attention_heads=num_attention_heads,
+            action=action,
+            dropout_rate=dropout_rate,
+            attention_dropout_rate=attention_dropout_rate,
+            proj_dropout_rate=proj_dropout_rate,
+        )
         self.part_norm = nn.LayerNorm(hidden_size, eps=1e-6)
 
     def forward(self, hidden_states):
@@ -143,12 +169,13 @@ class Part_Attention(nn.Module):
 
 
 class Attention(nn.Module):
-    def __init__(self,
-                 hidden_size=768,
-                 num_attention_heads=12,
-                 attention_dropout_rate=0.0,
-                 proj_dropout_rate=0.0
-                 ):
+    def __init__(
+        self,
+        hidden_size=768,
+        num_attention_heads=12,
+        attention_dropout_rate=0.0,
+        proj_dropout_rate=0.0,
+    ):
         super(Attention, self).__init__()
         self.hidden_size = hidden_size
         self.num_attention_heads = num_attention_heads
@@ -176,14 +203,18 @@ class Attention(nn.Module):
 
         # attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = query_layer @ key_layer.transpose(-1, -2)
-        attention_scores = attention_scores / math.sqrt(self.attention_head_size)
+        attention_scores = attention_scores / math.sqrt(
+            self.attention_head_size
+        )
         attention_probs = self.softmax(attention_scores)
         weights = attention_probs
         attention_probs = self.attn_dropout(attention_probs)
 
         context_layer = attention_probs @ value_layer
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
-        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
+        new_context_layer_shape = context_layer.size()[:-2] + (
+            self.all_head_size,
+        )
         context_layer = context_layer.view(*new_context_layer_shape)
         attention_output = self.out(context_layer)
         attention_output = self.proj_dropout(attention_output)
@@ -191,22 +222,27 @@ class Attention(nn.Module):
 
     def transpose_for_scores(self, x):
         # B L C -> B L HEAD HEAD_SIZE
-        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        new_x_shape = x.size()[:-1] + (
+            self.num_attention_heads,
+            self.attention_head_size,
+        )
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)  # B HEAD L HEAD_SIZE
 
 
 class Block(nn.Module):
-    def __init__(self,
-                 hidden_size,
-                 mlp_dim,
-                 num_attention_heads=12,
-                 attention_norm=None,
-                 ffn_norm=None,
-                 action='gelu',
-                 dropout_rate=0.1,
-                 attention_dropout_rate=0,
-                 proj_dropout_rate=0):
+    def __init__(
+        self,
+        hidden_size,
+        mlp_dim,
+        num_attention_heads=12,
+        attention_norm=None,
+        ffn_norm=None,
+        action='gelu',
+        dropout_rate=0.1,
+        attention_dropout_rate=0,
+        proj_dropout_rate=0,
+    ):
         super(Block, self).__init__()
         if attention_norm is None:
             attention_norm = nn.LayerNorm
@@ -216,10 +252,18 @@ class Block(nn.Module):
         self.hidden_size = hidden_size
         self.attention_norm = attention_norm(self.hidden_size, eps=1e-6)
         self.ffn_norm = ffn_norm(self.hidden_size, eps=1e-6)
-        self.ffn = MLP(hidden_size=hidden_size, mlp_dim=mlp_dim, action=action, dropout_rate=dropout_rate)
-        self.attn = Attention(hidden_size=hidden_size, num_attention_heads=num_attention_heads,
-                              attention_dropout_rate=attention_dropout_rate,
-                              proj_dropout_rate=proj_dropout_rate)
+        self.ffn = MLP(
+            hidden_size=hidden_size,
+            mlp_dim=mlp_dim,
+            action=action,
+            dropout_rate=dropout_rate,
+        )
+        self.attn = Attention(
+            hidden_size=hidden_size,
+            num_attention_heads=num_attention_heads,
+            attention_dropout_rate=attention_dropout_rate,
+            proj_dropout_rate=proj_dropout_rate,
+        )
 
     def forward(self, x):
         h = x
@@ -236,19 +280,39 @@ class Block(nn.Module):
     def load_from(self, weights, n_block):
         ROOT = f"Transformer/encoderblock_{n_block}"
         with torch.no_grad():
-            query_weight = np2th(weights[ROOT + "/" + ATTENTION_Q + "/kernel"]).view(self.hidden_size,
-                                                                                     self.hidden_size).t()
-            key_weight = np2th(weights[ROOT + "/" + ATTENTION_K + "/kernel"]).view(self.hidden_size,
-                                                                                   self.hidden_size).t()
-            value_weight = np2th(weights[ROOT + "/" + ATTENTION_V + "/kernel"]).view(self.hidden_size,
-                                                                                     self.hidden_size).t()
-            out_weight = np2th(weights[ROOT + "/" + ATTENTION_OUT + "/kernel"]).view(self.hidden_size,
-                                                                                     self.hidden_size).t()
+            query_weight = (
+                np2th(weights[ROOT + "/" + ATTENTION_Q + "/kernel"])
+                .view(self.hidden_size, self.hidden_size)
+                .t()
+            )
+            key_weight = (
+                np2th(weights[ROOT + "/" + ATTENTION_K + "/kernel"])
+                .view(self.hidden_size, self.hidden_size)
+                .t()
+            )
+            value_weight = (
+                np2th(weights[ROOT + "/" + ATTENTION_V + "/kernel"])
+                .view(self.hidden_size, self.hidden_size)
+                .t()
+            )
+            out_weight = (
+                np2th(weights[ROOT + "/" + ATTENTION_OUT + "/kernel"])
+                .view(self.hidden_size, self.hidden_size)
+                .t()
+            )
 
-            query_bias = np2th(weights[ROOT + "/" + ATTENTION_Q + "/bias"]).view(-1)
-            key_bias = np2th(weights[ROOT + "/" + ATTENTION_K + "/bias"]).view(-1)
-            value_bias = np2th(weights[ROOT + "/" + ATTENTION_V + "/bias"]).view(-1)
-            out_bias = np2th(weights[ROOT + "/" + ATTENTION_OUT + "/bias"]).view(-1)
+            query_bias = np2th(
+                weights[ROOT + "/" + ATTENTION_Q + "/bias"]
+            ).view(-1)
+            key_bias = np2th(weights[ROOT + "/" + ATTENTION_K + "/bias"]).view(
+                -1
+            )
+            value_bias = np2th(
+                weights[ROOT + "/" + ATTENTION_V + "/bias"]
+            ).view(-1)
+            out_bias = np2th(
+                weights[ROOT + "/" + ATTENTION_OUT + "/bias"]
+            ).view(-1)
 
             self.attn.query.weight.copy_(query_weight)
             self.attn.key.weight.copy_(key_weight)
@@ -269,17 +333,27 @@ class Block(nn.Module):
             self.ffn.fc1.bias.copy_(mlp_bias_0)
             self.ffn.fc2.bias.copy_(mlp_bias_1)
 
-            self.attention_norm.weight.copy_(np2th(weights[ROOT + "/" + ATTENTION_NORM + "/scale"]))
-            self.attention_norm.bias.copy_(np2th(weights[ROOT + "/" + ATTENTION_NORM + "/bias"]))
-            self.ffn_norm.weight.copy_(np2th(weights[ROOT + "/" + MLP_NORM + "/scale"]))
-            self.ffn_norm.bias.copy_(np2th(weights[ROOT + "/" + MLP_NORM + "/bias"]))
+            self.attention_norm.weight.copy_(
+                np2th(weights[ROOT + "/" + ATTENTION_NORM + "/scale"])
+            )
+            self.attention_norm.bias.copy_(
+                np2th(weights[ROOT + "/" + ATTENTION_NORM + "/bias"])
+            )
+            self.ffn_norm.weight.copy_(
+                np2th(weights[ROOT + "/" + MLP_NORM + "/scale"])
+            )
+            self.ffn_norm.bias.copy_(
+                np2th(weights[ROOT + "/" + MLP_NORM + "/bias"])
+            )
 
 
 class MLP(nn.Module):
     def __init__(self, hidden_size, mlp_dim, action='gelu', dropout_rate=0.1):
         super(MLP, self).__init__()
 
-        assert action in ACTION2FN.keys(), f"action function must is {ACTION2FN.keys()}, now action is {action}"
+        assert (
+            action in ACTION2FN.keys()
+        ), f"action function must is {ACTION2FN.keys()}, now action is {action}"
 
         self.fc1 = nn.Linear(hidden_size, mlp_dim)
         self.fc2 = nn.Linear(mlp_dim, hidden_size)
@@ -309,6 +383,7 @@ class Transformer(nn.Module):
             config = cfg
         else:
             import yaml
+
             file_name = Path(cfg).name
             with open(cfg, encoding='utf-8') as f:
                 config = yaml.safe_load(f)
@@ -323,15 +398,32 @@ class Transformer(nn.Module):
         mlp_dim = config["model"]["transformer"]["mlp_dim"]
         action = config["model"]["transformer"]["action"]
         num_attention_heads = config["model"]["transformer"]["num_heads"]
-        attention_dropout_rate = config["model"]["transformer"]["attention_dropout_rate"]
-        proj_dropout_rate = config["model"]["transformer"]["attention_dropout_rate"]
+        attention_dropout_rate = config["model"]["transformer"][
+            "attention_dropout_rate"
+        ]
+        proj_dropout_rate = config["model"]["transformer"][
+            "attention_dropout_rate"
+        ]
 
-        self.embeddings = Embeddings(in_channel=3, img_size=img_size, patch_size=patch_size, slide_step=slide_step,
-                                     split_type=split_type, hidden_size=hidden_size, dropout_rate=dropout_rate)
-        self.encoder = Encoder(num_layers=num_layers, hidden_size=hidden_size, num_attention_heads=num_attention_heads,
-                               mlp_dim=mlp_dim, action=action,
-                               dropout_rate=dropout_rate, attention_dropout_rate=attention_dropout_rate,
-                               proj_dropout_rate=proj_dropout_rate)
+        self.embeddings = Embeddings(
+            in_channel=3,
+            img_size=img_size,
+            patch_size=patch_size,
+            slide_step=slide_step,
+            split_type=split_type,
+            hidden_size=hidden_size,
+            dropout_rate=dropout_rate,
+        )
+        self.encoder = Encoder(
+            num_layers=num_layers,
+            hidden_size=hidden_size,
+            num_attention_heads=num_attention_heads,
+            mlp_dim=mlp_dim,
+            action=action,
+            dropout_rate=dropout_rate,
+            attention_dropout_rate=attention_dropout_rate,
+            proj_dropout_rate=proj_dropout_rate,
+        )
 
     def forward(self, x):
         embedding_out = self.embeddings(x)
@@ -340,12 +432,19 @@ class Transformer(nn.Module):
 
 
 class VisionTransformer(nn.Module):
-    def __init__(self, cfg='config/example.yaml', num_classes=21843, smoothing_value=0., zero_head=False):
+    def __init__(
+        self,
+        cfg='config/example.yaml',
+        num_classes=21843,
+        smoothing_value=0.0,
+        zero_head=False,
+    ):
         super(VisionTransformer, self).__init__()
         if isinstance(cfg, dict):
             config = cfg
         else:
             import yaml
+
             file_name = Path(cfg).name
             with open(cfg, encoding='utf-8') as f:
                 config = yaml.safe_load(f)
@@ -354,7 +453,9 @@ class VisionTransformer(nn.Module):
         self.smoothing_value = smoothing_value
         self.zero_head = zero_head
         self.classifier = config["model"]["classifier"]
-        self.part_head = nn.Linear(config["model"]["patches"]["hidden_size"], num_classes)
+        self.part_head = nn.Linear(
+            config["model"]["patches"]["hidden_size"], num_classes
+        )
 
         self.transformer = Transformer(config)
 
@@ -367,9 +468,13 @@ class VisionTransformer(nn.Module):
                 loss_fct = nn.CrossEntropyLoss()
             else:
                 from losses.labelSmoothing import LabelSmoothing
+
                 loss_fct = LabelSmoothing(self.smoothing_value)
-            part_loss = loss_fct(part_logits.view(-1, self.num_classes), label.view(-1))
+            part_loss = loss_fct(
+                part_logits.view(-1, self.num_classes), label.view(-1)
+            )
             from losses.contrastive_loss import contrastive_loss
+
             contrast_loss = contrastive_loss(part_tokens[:, 0], label.view(-1))
             loss = part_loss + contrast_loss
             return loss, part_logits
@@ -378,18 +483,29 @@ class VisionTransformer(nn.Module):
 
     def load_from(self, weights):
         with torch.no_grad():
-            self.transformer.embeddings.patch_embeddings.weight.copy_(np2th(weights["embedding/kernel"], conv=True))
-            self.transformer.embeddings.patch_embeddings.bias.copy_(np2th(weights["embedding/bias"]))
+            self.transformer.embeddings.patch_embeddings.weight.copy_(
+                np2th(weights["embedding/kernel"], conv=True)
+            )
+            self.transformer.embeddings.patch_embeddings.bias.copy_(
+                np2th(weights["embedding/bias"])
+            )
             self.transformer.embeddings.cls_token.copy_(np2th(weights["cls"]))
-            self.transformer.encoder.part_norm.weight.copy_(np2th(weights["Transformer/encoder_norm/scale"]))
-            self.transformer.encoder.part_norm.bias.copy_(np2th(weights["Transformer/encoder_norm/bias"]))
+            self.transformer.encoder.part_norm.weight.copy_(
+                np2th(weights["Transformer/encoder_norm/scale"])
+            )
+            self.transformer.encoder.part_norm.bias.copy_(
+                np2th(weights["Transformer/encoder_norm/bias"])
+            )
 
             posemb = np2th(weights["Transformer/posembed_input/pos_embedding"])
             posemb_new = self.transformer.embeddings.position_embeddings
             if posemb.size() == posemb_new.size():
                 self.transformer.embeddings.position_embeddings.copy_(posemb)
             else:
-                logging.info("load_pretrained: resized variant: %s to %s" % (posemb.size(), posemb_new.size()))
+                logging.info(
+                    "load_pretrained: resized variant: %s to %s"
+                    % (posemb.size(), posemb_new.size())
+                )
                 ntok_new = posemb_new.size(1)
 
                 if self.classifier == "token":
@@ -400,14 +516,19 @@ class VisionTransformer(nn.Module):
 
                 gs_old = int(np.sqrt(len(posemb_grid)))
                 gs_new = int(np.sqrt(ntok_new))
-                print('load_pretrained: grid-size from %s to %s' % (gs_old, gs_new))
+                print(
+                    'load_pretrained: grid-size from %s to %s'
+                    % (gs_old, gs_new)
+                )
                 posemb_grid = posemb_grid.reshape(gs_old, gs_old, -1)
 
                 zoom = (gs_new / gs_old, gs_new / gs_old, 1)
                 posemb_grid = ndimage.zoom(posemb_grid, zoom, order=1)
                 posemb_grid = posemb_grid.reshape(1, gs_new * gs_new, -1)
                 posemb = np.concatenate([posemb_tok, posemb_grid], axis=1)
-                self.transformer.embeddings.position_embeddings.copy_(np2th(posemb))
+                self.transformer.embeddings.position_embeddings.copy_(
+                    np2th(posemb)
+                )
 
             for bname, block in self.transformer.encoder.named_children():
                 if bname.startswith('part') == False:
@@ -416,13 +537,23 @@ class VisionTransformer(nn.Module):
 
             if self.transformer.embeddings.hybrid:
                 self.transformer.embeddings.hybrid_model.root.conv.weight.copy_(
-                    np2th(weights["conv_root/kernel"], conv=True))
+                    np2th(weights["conv_root/kernel"], conv=True)
+                )
                 gn_weight = np2th(weights["gn_root/scale"]).view(-1)
                 gn_bias = np2th(weights["gn_root/bias"]).view(-1)
-                self.transformer.embeddings.hybrid_model.root.gn.weight.copy_(gn_weight)
-                self.transformer.embeddings.hybrid_model.root.gn.bias.copy_(gn_bias)
+                self.transformer.embeddings.hybrid_model.root.gn.weight.copy_(
+                    gn_weight
+                )
+                self.transformer.embeddings.hybrid_model.root.gn.bias.copy_(
+                    gn_bias
+                )
 
-                for bname, block in self.transformer.embeddings.hybrid_model.body.named_children():
+                for (
+                    bname,
+                    block,
+                ) in (
+                    self.transformer.embeddings.hybrid_model.body.named_children()
+                ):
                     for uname, unit in block.named_children():
                         unit.load_from(weights, n_block=bname, n_unit=uname)
 

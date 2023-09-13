@@ -26,16 +26,17 @@ def time_sync():
 
 @torch.no_grad()
 def run(
-        model_name='mnist_cnn',  # 网络名字
-        weights='best_model.pth',  # 模型路径
-        source='./data/test',  # 测试数据路径，可以是文件夹，可以是单张图片
-        use_cuda=True,  # 是否使用cuda
-        view_img=False,  # 是否可视化测试图片
-        save_txt=True,  # 是否将结果保存到txt
-        project='runs/result'  # 结果输出路径
-
+    model_name='mnist_cnn',  # 网络名字
+    weights='best_model.pth',  # 模型路径
+    source='./data/test',  # 测试数据路径，可以是文件夹，可以是单张图片
+    use_cuda=True,  # 是否使用cuda
+    view_img=False,  # 是否可视化测试图片
+    save_txt=True,  # 是否将结果保存到txt
+    project='runs/result',  # 结果输出路径
 ):
-    device = torch.device("cuda" if torch.cuda.is_available() and use_cuda else "cpu")
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() and use_cuda else "cpu"
+    )
     if save_txt:
         if os.path.exists(project):
             shutil.rmtree(project)
@@ -43,7 +44,9 @@ def run(
         f = open(project + "/result.txt", 'w')
 
     # load model
-    assert os.path.exists(weights), "model path: {} does not exists".format(weights)
+    assert os.path.exists(weights), "model path: {} does not exists".format(
+        weights
+    )
     if model_name == 'mnist_cnn':
         model = mnist_cnn(num_classes=10)
     elif model_name == 'mnist_fcn':
@@ -58,7 +61,9 @@ def run(
     y = model(torch.rand(1, 3, 28, 28).to(device))
 
     # load img
-    assert os.path.exists(source), "data source: {} does not exists".format(source)
+    assert os.path.exists(source), "data source: {} does not exists".format(
+        source
+    )
     if os.path.isdir(source):
         files = sorted(glob.glob(os.path.join(source, '*.*')))
     elif os.path.isfile(source):
@@ -80,10 +85,12 @@ def run(
         # 将数组内存转为连续，提高运行速度，(不转的话也可能会报错)
         img0 = np.ascontiguousarray(img0)
         img0 = img0.astype('float32')
-        img0 /= 255.
+        img0 /= 255.0
         img_tensor = torch.from_numpy(img0)
         if len(img_tensor.shape) == 3:
-            img_tensor = img_tensor[None]  # 等价于img_tensor = img_tensor.unsqueeze(0)
+            img_tensor = img_tensor[
+                None
+            ]  # 等价于img_tensor = img_tensor.unsqueeze(0)
         """
         # toTensor
         # 第57行到65行等价于下面两句话
@@ -112,11 +119,17 @@ def run(
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model-name', type=str, default='mnist_fcn')
-    parser.add_argument('--weights', type=str, default='best_model.pth', help='the model path')
-    parser.add_argument('--source', type=str, default='./data/test', help='test data path')  # /0_00001.jpg
+    parser.add_argument(
+        '--weights', type=str, default='best_model.pth', help='the model path'
+    )
+    parser.add_argument(
+        '--source', type=str, default='./data/test', help='test data path'
+    )  # /0_00001.jpg
     parser.add_argument('--use-cuda', type=bool, default=True)
     parser.add_argument('--view-img', type=bool, default=False)
     parser.add_argument('-s', '--save-txt', type=bool, default=True)
-    parser.add_argument('--project', type=str, default='runs/result', help='output path')
+    parser.add_argument(
+        '--project', type=str, default='runs/result', help='output path'
+    )
     opt = parser.parse_args()
     run(**vars(opt))

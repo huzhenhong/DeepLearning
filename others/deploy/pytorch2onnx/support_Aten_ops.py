@@ -1,4 +1,3 @@
-
 """
 测试pytorch模型到onnx的算子转换
 
@@ -72,5 +71,3 @@ if __name__ == '__main__':
     test()
 
     # 测试DCN
-
-

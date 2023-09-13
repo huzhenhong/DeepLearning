@@ -20,4 +20,4 @@
 ## 数据集链接
 手写字符数据集：链接：https://pan.baidu.com/s/18Fz9Cpj0Lf9BC7As8frZrw 提取码：xhgk
 
-新冠病毒数据集  链接：https://pan.baidu.com/s/1XutIOtrt75GoBqq09KP3tw  提取码：nkuw 
+新冠病毒数据集  链接：https://pan.baidu.com/s/1XutIOtrt75GoBqq09KP3tw  提取码：nkuw

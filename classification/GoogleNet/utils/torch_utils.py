@@ -24,10 +24,21 @@ def torch_distributed_zero_first(local_rank: int):
 
 def device_count():
     # Returns number of CUDA devices available. Safe version of torch.cuda.device_count(). Supports Linux and Windows
-    assert platform.system() in ('Linux', 'Windows'), 'device_count() only supported on Linux or Windows'
+    assert platform.system() in (
+        'Linux',
+        'Windows',
+    ), 'device_count() only supported on Linux or Windows'
     try:
-        cmd = 'nvidia-smi -L | wc -l' if platform.system() == 'Linux' else 'nvidia-smi -L | find /c /v ""'  # Windows
-        return int(subprocess.run(cmd, shell=True, capture_output=True, check=True).stdout.decode().split()[-1])
+        cmd = (
+            'nvidia-smi -L | wc -l'
+            if platform.system() == 'Linux'
+            else 'nvidia-smi -L | find /c /v ""'
+        )  # Windows
+        return int(
+            subprocess.run(cmd, shell=True, capture_output=True, check=True)
+            .stdout.decode()
+            .split()[-1]
+        )
     except Exception:
         return 0
 
@@ -35,27 +46,44 @@ def device_count():
 def select_device(device='', batch_size=0, newline=True):
     # device = None or 'cpu' or 0 or '0' or '0,1,2,3'
     s = f'Python-{platform.python_version()} torch-{torch.__version__} '
-    device = str(device).strip().lower().replace('cuda:', '').replace('none', '')  # to string, 'cuda:0' to '0'
+    device = (
+        str(device).strip().lower().replace('cuda:', '').replace('none', '')
+    )  # to string, 'cuda:0' to '0'
     cpu = device == 'cpu'
     mps = device == 'mps'  # Apple Metal Performance Shaders (MPS)
     if cpu or mps:
-        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # force torch.cuda.is_available() = False
+        os.environ[
+            'CUDA_VISIBLE_DEVICES'
+        ] = '-1'  # force torch.cuda.is_available() = False
     elif device:  # non-cpu device requested
-        os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable - must be before assert is_available()
-        assert torch.cuda.is_available() and torch.cuda.device_count() >= len(device.replace(',', '')), \
-            f"Invalid CUDA '--device {device}' requested, use '--device cpu' or pass valid CUDA device(s)"
+        os.environ[
+            'CUDA_VISIBLE_DEVICES'
+        ] = device  # set environment variable - must be before assert is_available()
+        assert torch.cuda.is_available() and torch.cuda.device_count() >= len(
+            device.replace(',', '')
+        ), f"Invalid CUDA '--device {device}' requested, use '--device cpu' or pass valid CUDA device(s)"
 
     if not cpu and torch.cuda.is_available():  # prefer GPU if available
-        devices = device.split(',') if device else '0'  # range(torch.cuda.device_count())  # i.e. 0,1,6,7
+        devices = (
+            device.split(',') if device else '0'
+        )  # range(torch.cuda.device_count())  # i.e. 0,1,6,7
         n = len(devices)  # device count
-        if n > 1 and batch_size > 0:  # check batch_size is divisible by device_count
-            assert batch_size % n == 0, f'batch-size {batch_size} not multiple of GPU count {n}'
+        if (
+            n > 1 and batch_size > 0
+        ):  # check batch_size is divisible by device_count
+            assert (
+                batch_size % n == 0
+            ), f'batch-size {batch_size} not multiple of GPU count {n}'
         space = ' ' * (len(s) + 1)
         for i, d in enumerate(devices):
             p = torch.cuda.get_device_properties(i)
             s += f"{'' if i == 0 else space}CUDA:{d} ({p.name}, {p.total_memory / (1 << 20):.0f}MiB)\n"  # bytes to MB
         arg = 'cuda:0'
-    elif not cpu and getattr(torch, 'has_mps', False) and torch.backends.mps.is_available():  # prefer MPS if available
+    elif (
+        not cpu
+        and getattr(torch, 'has_mps', False)
+        and torch.backends.mps.is_available()
+    ):  # prefer MPS if available
         s += 'MPS\n'
         arg = 'mps'
     else:  # revert to CPU
@@ -113,17 +141,27 @@ def warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor):
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=f)
 
 
-def load_checkpoint(config, model, optimizer, lr_scheduler, loss_scaler, logger):
-    logger.info(f"==============> Resuming form {config.MODEL.RESUME}....................")
+def load_checkpoint(
+    config, model, optimizer, lr_scheduler, loss_scaler, logger
+):
+    logger.info(
+        f"==============> Resuming form {config.MODEL.RESUME}...................."
+    )
     if config.MODEL.RESUME.startswith('https'):
         checkpoint = torch.hub.load_state_dict_from_url(
-            config.MODEL.RESUME, map_location='cpu', check_hash=True)
+            config.MODEL.RESUME, map_location='cpu', check_hash=True
+        )
     else:
         checkpoint = torch.load(config.MODEL.RESUME, map_location='cpu')
     msg = model.load_state_dict(checkpoint['model'], strict=False)
     logger.info(msg)
     max_accuracy = 0.0
-    if not config.EVAL_MODE and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
+    if (
+        not config.EVAL_MODE
+        and 'optimizer' in checkpoint
+        and 'lr_scheduler' in checkpoint
+        and 'epoch' in checkpoint
+    ):
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
         config.defrost()
@@ -131,7 +169,9 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, loss_scaler, logger)
         config.freeze()
         if 'scaler' in checkpoint:
             loss_scaler.load_state_dict(checkpoint['scaler'])
-        logger.info(f"=> loaded successfully '{config.MODEL.RESUME}' (epoch {checkpoint['epoch']})")
+        logger.info(
+            f"=> loaded successfully '{config.MODEL.RESUME}' (epoch {checkpoint['epoch']})"
+        )
         if 'max_accuracy' in checkpoint:
             max_accuracy = checkpoint['max_accuracy']
 
@@ -141,13 +181,20 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, loss_scaler, logger)
 
 
 def load_pretrained(config, model, logger):
-    logger.info(f"==============> Loading weight {config.MODEL.PRETRAINED} for fine-tuning......")
+    logger.info(
+        f"==============> Loading weight {config.MODEL.PRETRAINED} for fine-tuning......"
+    )
     if config.MODEL.PRETRAINED.startswith('https'):
         checkpoint = torch.hub.load_state_dict_from_url(
-            config.MODEL.PRETRAINED, map_location='cpu', check_hash=True)
+            config.MODEL.PRETRAINED, map_location='cpu', check_hash=True
+        )
     else:
         checkpoint = torch.load(config.MODEL.PRETRAINED, map_location='cpu')
-    checkpoint = {k: v for k, v in checkpoint.items() if model.state_dict()[k].numel() == v.numel()}
+    checkpoint = {
+        k: v
+        for k, v in checkpoint.items()
+        if model.state_dict()[k].numel() == v.numel()
+    }
     state_dict = checkpoint
     msg = model.load_state_dict(state_dict, strict=False)
     logger.warning(msg)
@@ -248,14 +295,25 @@ def load_pretrained(config, model, logger):
 #     torch.cuda.empty_cache()
 
 
-def save_checkpoint(config, epoch, model, max_accuracy, optimizer, lr_scheduler, loss_scaler, logger):
-    save_state = {'model': model.state_dict(),
-                  'optimizer': optimizer.state_dict(),
-                  'lr_scheduler': lr_scheduler.state_dict(),
-                  'max_accuracy': max_accuracy,
-                  'scaler': loss_scaler.state_dict(),
-                  'epoch': epoch,
-                  'config': config}
+def save_checkpoint(
+    config,
+    epoch,
+    model,
+    max_accuracy,
+    optimizer,
+    lr_scheduler,
+    loss_scaler,
+    logger,
+):
+    save_state = {
+        'model': model.state_dict(),
+        'optimizer': optimizer.state_dict(),
+        'lr_scheduler': lr_scheduler.state_dict(),
+        'max_accuracy': max_accuracy,
+        'scaler': loss_scaler.state_dict(),
+        'epoch': epoch,
+        'config': config,
+    }
 
     save_path = os.path.join(config.OUTPUT, f'ckpt_epoch_{epoch}.pth')
     logger.info(f"{save_path} saving......")
@@ -272,7 +330,7 @@ def get_grad_norm(parameters, norm_type=2):
     for p in parameters:
         param_norm = p.grad.data.norm(norm_type)
         total_norm += param_norm.item() ** norm_type
-    total_norm = total_norm ** (1. / norm_type)
+    total_norm = total_norm ** (1.0 / norm_type)
     return total_norm
 
 
@@ -281,7 +339,10 @@ def auto_resume_helper(output_dir):
     checkpoints = [ckpt for ckpt in checkpoints if ckpt.endswith('pth')]
     print(f"All checkpoints founded in {output_dir}: {checkpoints}")
     if len(checkpoints) > 0:
-        latest_checkpoint = max([os.path.join(output_dir, d) for d in checkpoints], key=os.path.getmtime)
+        latest_checkpoint = max(
+            [os.path.join(output_dir, d) for d in checkpoints],
+            key=os.path.getmtime,
+        )
         print(f"The latest checkpoint founded: {latest_checkpoint}")
         resume_file = latest_checkpoint
     else:
@@ -302,13 +363,22 @@ def ampscaler_get_grad_norm(parameters, norm_type: float = 2.0) -> torch.Tensor:
     parameters = [p for p in parameters if p.grad is not None]
     norm_type = float(norm_type)
     if len(parameters) == 0:
-        return torch.tensor(0.)
+        return torch.tensor(0.0)
     device = parameters[0].grad.device
     if norm_type == inf:
-        total_norm = max(p.grad.detach().abs().max().to(device) for p in parameters)
+        total_norm = max(
+            p.grad.detach().abs().max().to(device) for p in parameters
+        )
     else:
-        total_norm = torch.norm(torch.stack([torch.norm(p.grad.detach(),
-                                                        norm_type).to(device) for p in parameters]), norm_type)
+        total_norm = torch.norm(
+            torch.stack(
+                [
+                    torch.norm(p.grad.detach(), norm_type).to(device)
+                    for p in parameters
+                ]
+            ),
+            norm_type,
+        )
     return total_norm
 
 
@@ -318,12 +388,22 @@ class NativeScalerWithGradNormCount:
     def __init__(self):
         self._scaler = torch.cuda.amp.GradScaler()
 
-    def __call__(self, loss, optimizer, clip_grad=None, parameters=None, create_graph=False, update_grad=True):
+    def __call__(
+        self,
+        loss,
+        optimizer,
+        clip_grad=None,
+        parameters=None,
+        create_graph=False,
+        update_grad=True,
+    ):
         self._scaler.scale(loss).backward(create_graph=create_graph)
         if update_grad:
             if clip_grad is not None:
                 assert parameters is not None
-                self._scaler.unscale_(optimizer)  # unscale the gradients of optimizer's assigned params in-place
+                self._scaler.unscale_(
+                    optimizer
+                )  # unscale the gradients of optimizer's assigned params in-place
                 norm = torch.nn.utils.clip_grad_norm_(parameters, clip_grad)
             else:
                 self._scaler.unscale_(optimizer)
@@ -339,6 +419,7 @@ class NativeScalerWithGradNormCount:
 
     def load_state_dict(self, state_dict):
         self._scaler.load_state_dict(state_dict)
+
 
 def accuracy(output, target, topk=(1,)):
     """Computes the accuracy over the k top predictions for the specified values of k"""

@@ -265,7 +265,7 @@
 01/18/2023 12:17:33 - INFO - root - ====>  Creating dataset with 5794 examples   <=====
 01/18/2023 12:17:33 - INFO - root - ===>  Create train loader successful, size: 1498 x batch size: 4 <===
 01/18/2023 12:17:33 - INFO - root - ===>  Create val loader successful, size: 1449 x batch size: 4  <===
-01/18/2023 12:17:33 - INFO - root - 
+01/18/2023 12:17:33 - INFO - root -
 ***** Train params *****
 01/18/2023 12:17:33 - INFO - root - ====>  dataset: {'name': 'CUB_200_2011', 'root': '/home/molardata/dataset/CUB_200_2011', 'train': None, 'val': None}   <=====
 01/18/2023 12:17:33 - INFO - root - ====>  train_transforms: {'Resize': [600, 600], 'RandomCrop': [448, 448], 'RandomHorizontalFlip': None, 'ToTensor': None, 'Normalize': [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]]}   <=====
@@ -275,7 +275,7 @@
 01/18/2023 12:17:33 - INFO - root - ====>  optimizer: {'name': 'SGD', 'params': {'lr': 0.03, 'momentum': 0.9, 'weight_decay': 0.0001}}   <=====
 01/18/2023 12:17:33 - INFO - root - ====>  scheduler: {'name': 'WarmupCosine', 'params': {'warmup_steps': 500, 't_total': 10000}}   <=====
 01/18/2023 12:17:33 - INFO - root - ====>  criterion: None   <=====
-01/18/2023 12:17:33 - INFO - root - 
+01/18/2023 12:17:33 - INFO - root -
 ***** Running training *****
 01/18/2023 12:17:33 - INFO - root - ===>  Total optimization steps = 10000  <===
 01/18/2023 12:17:33 - INFO - root - ===>  Instantaneous batch size per GPU = 4  <===
@@ -284,7 +284,7 @@
 01/18/2023 12:21:33 - INFO - root - ***** Running Validation *****
 01/18/2023 12:21:33 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 12:21:33 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 12:24:22 - INFO - root - 
+01/18/2023 12:24:22 - INFO - root -
 
 01/18/2023 12:24:22 - INFO - root - Validation Results
 01/18/2023 12:24:22 - INFO - root - Global Steps: 900
@@ -296,7 +296,7 @@
 01/18/2023 12:28:24 - INFO - root - ***** Running Validation *****
 01/18/2023 12:28:24 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 12:28:24 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 12:31:13 - INFO - root - 
+01/18/2023 12:31:13 - INFO - root -
 
 01/18/2023 12:31:13 - INFO - root - Validation Results
 01/18/2023 12:31:13 - INFO - root - Global Steps: 1800
@@ -307,7 +307,7 @@
 01/18/2023 12:35:14 - INFO - root - ***** Running Validation *****
 01/18/2023 12:35:14 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 12:35:14 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 12:38:03 - INFO - root - 
+01/18/2023 12:38:03 - INFO - root -
 
 01/18/2023 12:38:03 - INFO - root - Validation Results
 01/18/2023 12:38:03 - INFO - root - Global Steps: 2700
@@ -319,7 +319,7 @@
 01/18/2023 12:42:05 - INFO - root - ***** Running Validation *****
 01/18/2023 12:42:05 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 12:42:05 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 12:44:54 - INFO - root - 
+01/18/2023 12:44:54 - INFO - root -
 
 01/18/2023 12:44:54 - INFO - root - Validation Results
 01/18/2023 12:44:54 - INFO - root - Global Steps: 3600
@@ -331,7 +331,7 @@
 01/18/2023 12:48:56 - INFO - root - ***** Running Validation *****
 01/18/2023 12:48:56 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 12:48:56 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 12:51:45 - INFO - root - 
+01/18/2023 12:51:45 - INFO - root -
 
 01/18/2023 12:51:45 - INFO - root - Validation Results
 01/18/2023 12:51:45 - INFO - root - Global Steps: 4500
@@ -342,7 +342,7 @@
 01/18/2023 12:55:46 - INFO - root - ***** Running Validation *****
 01/18/2023 12:55:46 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 12:55:46 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 12:58:35 - INFO - root - 
+01/18/2023 12:58:35 - INFO - root -
 
 01/18/2023 12:58:35 - INFO - root - Validation Results
 01/18/2023 12:58:35 - INFO - root - Global Steps: 5400
@@ -354,7 +354,7 @@
 01/18/2023 13:02:38 - INFO - root - ***** Running Validation *****
 01/18/2023 13:02:38 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 13:02:38 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 13:05:27 - INFO - root - 
+01/18/2023 13:05:27 - INFO - root -
 
 01/18/2023 13:05:27 - INFO - root - Validation Results
 01/18/2023 13:05:27 - INFO - root - Global Steps: 6300
@@ -365,7 +365,7 @@
 01/18/2023 13:09:29 - INFO - root - ***** Running Validation *****
 01/18/2023 13:09:29 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 13:09:29 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 13:12:18 - INFO - root - 
+01/18/2023 13:12:18 - INFO - root -
 
 01/18/2023 13:12:18 - INFO - root - Validation Results
 01/18/2023 13:12:18 - INFO - root - Global Steps: 7200
@@ -377,7 +377,7 @@
 01/18/2023 13:16:20 - INFO - root - ***** Running Validation *****
 01/18/2023 13:16:20 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 13:16:20 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 13:19:09 - INFO - root - 
+01/18/2023 13:19:09 - INFO - root -
 
 01/18/2023 13:19:09 - INFO - root - Validation Results
 01/18/2023 13:19:09 - INFO - root - Global Steps: 8100
@@ -388,7 +388,7 @@
 01/18/2023 13:23:10 - INFO - root - ***** Running Validation *****
 01/18/2023 13:23:10 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 13:23:10 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 13:25:59 - INFO - root - 
+01/18/2023 13:25:59 - INFO - root -
 
 01/18/2023 13:25:59 - INFO - root - Validation Results
 01/18/2023 13:25:59 - INFO - root - Global Steps: 9000
@@ -399,7 +399,7 @@
 01/18/2023 13:30:01 - INFO - root - ***** Running Validation *****
 01/18/2023 13:30:01 - INFO - root - ===>  Num steps = 1449  <===
 01/18/2023 13:30:01 - INFO - root - ===>  Batch size = 4  <===
-01/18/2023 13:32:50 - INFO - root - 
+01/18/2023 13:32:50 - INFO - root -
 
 01/18/2023 13:32:50 - INFO - root - Validation Results
 01/18/2023 13:32:50 - INFO - root - Global Steps: 9900

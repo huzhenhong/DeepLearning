@@ -15,7 +15,13 @@ from tqdm import tqdm
 
 from dataLoader.dataSet import read_split_data
 from dataLoader.dataLoader import My_Dataset
-from utils import matplotlib_imshow, train_one_epoch, evaluate, get_params_groups, create_lr_scheduler
+from utils import (
+    matplotlib_imshow,
+    train_one_epoch,
+    evaluate,
+    get_params_groups,
+    create_lr_scheduler,
+)
 from models.networks import se_resnet50
 
 
@@ -23,7 +29,9 @@ from models.networks import se_resnet50
 def main(opt):
     # 1.读取一些配置参数，并且输出
     print(opt)
-    assert os.path.exists(opt.data_path), "{} dose not exists.".format(opt.data_path)
+    assert os.path.exists(opt.data_path), "{} dose not exists.".format(
+        opt.data_path
+    )
 
     # 创建日志文件
     tb_writer = SummaryWriter()
@@ -35,50 +43,95 @@ def main(opt):
     os.makedirs(weights_dir, exist_ok=True)
 
     # 设备
-    device = torch.device('cuda' if torch.cuda.is_available() and opt.use_cuda else "cpu")
+    device = torch.device(
+        'cuda' if torch.cuda.is_available() and opt.use_cuda else "cpu"
+    )
 
     # 2.数据读取
-    train_images_path, val_images_path, train_labels, val_labels, every_class_num = read_split_data(
-        data_root=opt.data_path, val_rate=0.2, save_dir=save_dir)
+    (
+        train_images_path,
+        val_images_path,
+        train_labels,
+        val_labels,
+        every_class_num,
+    ) = read_split_data(
+        data_root=opt.data_path, val_rate=0.2, save_dir=save_dir
+    )
 
     # 3.pytorch框架
     #   3.1 数据加载：dataset,transform,dataloader
     data_transform = {
         "train": transforms.Compose(
-            [transforms.RandomResizedCrop(224),
-             transforms.RandomHorizontalFlip(),
-             transforms.ToTensor(),
-             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
+            [
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                ),
+            ]
         ),
         "val": transforms.Compose(
-            [transforms.Resize(256),
-             transforms.CenterCrop(224),
-             transforms.ToTensor(),
-             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
-        )
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                ),
+            ]
+        ),
     }
 
-    train_dataset = My_Dataset(images_path=train_images_path, images_class=train_labels,
-                               transform=data_transform['train'])
-    val_dataset = My_Dataset(images_path=val_images_path, images_class=val_labels, transform=data_transform['val'])
+    train_dataset = My_Dataset(
+        images_path=train_images_path,
+        images_class=train_labels,
+        transform=data_transform['train'],
+    )
+    val_dataset = My_Dataset(
+        images_path=val_images_path,
+        images_class=val_labels,
+        transform=data_transform['val'],
+    )
 
-    nw = min([os.cpu_count(), opt.batch_size, opt.num_worker if opt.batch_size > 1 else 0, 8])
+    nw = min(
+        [
+            os.cpu_count(),
+            opt.batch_size,
+            opt.num_worker if opt.batch_size > 1 else 0,
+            8,
+        ]
+    )
     print('Using {} dataloader workers every process'.format(nw))
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=opt.batch_size, shuffle=True,
-                                               num_workers=nw, collate_fn=train_dataset.collate_fn, pin_memory=True)
-    val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=opt.batch_size, shuffle=False,
-                                             num_workers=nw, collate_fn=val_dataset.collate_fn, pin_memory=True)
+    train_loader = torch.utils.data.DataLoader(
+        dataset=train_dataset,
+        batch_size=opt.batch_size,
+        shuffle=True,
+        num_workers=nw,
+        collate_fn=train_dataset.collate_fn,
+        pin_memory=True,
+    )
+    val_loader = torch.utils.data.DataLoader(
+        dataset=val_dataset,
+        batch_size=opt.batch_size,
+        shuffle=False,
+        num_workers=nw,
+        collate_fn=val_dataset.collate_fn,
+        pin_memory=True,
+    )
 
     #   3.2 网络搭建：model
     classes = len(every_class_num)
     model = se_resnet50(num_classes=classes)
     if opt.weights != '':
-        assert os.path.exists(opt.weights), "weights file: '{}' not exist.".format(opt.weights)
+        assert os.path.exists(
+            opt.weights
+        ), "weights file: '{}' not exist.".format(opt.weights)
         weights_dict = torch.load(opt.weights, map_location=device)
         in_channel = model.fc.in_features
         model.fc = nn.Linear(in_channel, classes)
-        del_keys = ['fc.weight','fc.bias']
+        del_keys = ['fc.weight', 'fc.bias']
         for k in del_keys:
             del weights_dict[k]
         model.load_state_dict(weights_dict, strict=False)
@@ -95,16 +148,22 @@ def main(opt):
     # pg = [p for p in model.parameters() if p.requires_grad]
     pg = get_params_groups(model, weight_decay=5e-2)
     if opt.optimizer.lower() == 'sgd':
-        optimizer = torch.optim.SGD(pg, lr=opt.lr, momentum=0.9, weight_decay=5e-5)
+        optimizer = torch.optim.SGD(
+            pg, lr=opt.lr, momentum=0.9, weight_decay=5e-5
+        )
     elif opt.optimizer.lower() == 'adam':
         optimizer = torch.optim.Adam(pg, lr=opt.lr, weight_decay=1e-3)
     elif opt.optimizer.lower() == 'adamw':
-        optimizer = torch.optim.AdamW(pg, lr=opt.lr, betas=(0.9, 0.999), eps=1e-8, weight_decay=5e-2)
+        optimizer = torch.optim.AdamW(
+            pg, lr=opt.lr, betas=(0.9, 0.999), eps=1e-8, weight_decay=5e-2
+        )
 
     # Scheduler https://arxiv.org/pdf/1812.01187.pdf
     # lf = lambda x: ((1 + math.cos(x * math.pi / opt.epochs)) / 2) * (1 - opt.lrf) + opt.lrf  # cosine
     # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [5, 10, 20], 0.1)
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(
+        optimizer, [5, 10, 20], 0.1
+    )
 
     # scheduler = create_lr_scheduler(optimizer, len(train_loader), opt.epochs,
     #                                 warmup=True, warmup_epochs=1)
@@ -115,13 +174,29 @@ def main(opt):
     best_epoch = 0
     for epoch in tqdm(range(opt.epochs)):
         # train
-        train_loss, train_acc = train_one_epoch(model, train_loader, device, optimizer, loss_function, epoch=epoch,
-                                                scheduler=scheduler)
+        train_loss, train_acc = train_one_epoch(
+            model,
+            train_loader,
+            device,
+            optimizer,
+            loss_function,
+            epoch=epoch,
+            scheduler=scheduler,
+        )
         scheduler.step()
 
         #  eval
-        val_loss, val_acc = evaluate(model, val_loader, device, loss_function, epoch)
-        tags = ["train_loss", "train_acc", "val_loss", "val_acc", "learning_rate", "images"]
+        val_loss, val_acc = evaluate(
+            model, val_loader, device, loss_function, epoch
+        )
+        tags = [
+            "train_loss",
+            "train_acc",
+            "val_loss",
+            "val_acc",
+            "learning_rate",
+            "images",
+        ]
         tb_writer.add_scalar(tags[0], train_loss, epoch)
         tb_writer.add_scalar(tags[1], train_acc, epoch)
         tb_writer.add_scalar(tags[2], val_loss, epoch)
@@ -145,7 +220,9 @@ def main(opt):
 # 程序入口
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data-path', type=str, default='./data', help='The data path')
+    parser.add_argument(
+        '--data-path', type=str, default='./data', help='The data path'
+    )
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--batch-size', type=int, default=8)
     parser.add_argument('--num-worker', type=int, default=1)
@@ -153,10 +230,17 @@ if __name__ == '__main__':
     parser.add_argument('--lrf', type=float, default=0.01)
 
     # https://github.com/moskomule/senet.pytorch/releases/download/archive/seresnet50-60a8950a85b2b.pkl
-    parser.add_argument('--weights', type=str, default='seresnet50-60a8950a85b2b.pkl', help='initial weights path')  #
+    parser.add_argument(
+        '--weights',
+        type=str,
+        default='seresnet50-60a8950a85b2b.pkl',
+        help='initial weights path',
+    )  #
     parser.add_argument('--freeze-layers', type=bool, default=False)
     parser.add_argument('--use_cuda', default=True)
-    parser.add_argument('--optimizer', type=str, default='sgd')  # sgd,adam,adamw
+    parser.add_argument(
+        '--optimizer', type=str, default='sgd'
+    )  # sgd,adam,adamw
 
     args = parser.parse_args()
 

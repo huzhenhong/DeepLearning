@@ -15,12 +15,18 @@ def read_split_data(root: str, val_rate: float = 0.2):
     assert os.path.exists(root), "dataset root: {} does not exist.".format(root)
 
     # 遍历文件夹，一个文件夹对应一个类别
-    flower_class = [cla for cla in os.listdir(root) if os.path.isdir(os.path.join(root, cla))]
+    flower_class = [
+        cla
+        for cla in os.listdir(root)
+        if os.path.isdir(os.path.join(root, cla))
+    ]
     # 排序，保证顺序一致
     flower_class.sort()
     # 生成类别名称以及对应的数字索引
     class_indices = dict((k, v) for v, k in enumerate(flower_class))
-    json_str = json.dumps(dict((val, key) for key, val in class_indices.items()), indent=4)
+    json_str = json.dumps(
+        dict((val, key) for key, val in class_indices.items()), indent=4
+    )
     with open('class_indices.json', 'w') as json_file:
         json_file.write(json_str)
 
@@ -34,8 +40,11 @@ def read_split_data(root: str, val_rate: float = 0.2):
     for cla in flower_class:
         cla_path = os.path.join(root, cla)
         # 遍历获取supported支持的所有文件路径
-        images = [os.path.join(root, cla, i) for i in os.listdir(cla_path)
-                  if os.path.splitext(i)[-1] in supported]
+        images = [
+            os.path.join(root, cla, i)
+            for i in os.listdir(cla_path)
+            if os.path.splitext(i)[-1] in supported
+        ]
         # 获取该类别对应的索引
         image_class = class_indices[cla]
         # 记录该类别的样本数量
@@ -72,7 +81,12 @@ def read_split_data(root: str, val_rate: float = 0.2):
         plt.title('flower class distribution')
         plt.show()
 
-    return train_images_path, train_images_label, val_images_path, val_images_label
+    return (
+        train_images_path,
+        train_images_label,
+        val_images_path,
+        val_images_label,
+    )
 
 
 def plot_data_loader_image(data_loader):
@@ -132,9 +146,9 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch):
         loss.backward()
         accu_loss += loss.detach()
 
-        data_loader.desc = "[train epoch {}] loss: {:.3f}, acc: {:.3f}".format(epoch,
-                                                                               accu_loss.item() / (step + 1),
-                                                                               accu_num.item() / sample_num)
+        data_loader.desc = "[train epoch {}] loss: {:.3f}, acc: {:.3f}".format(
+            epoch, accu_loss.item() / (step + 1), accu_num.item() / sample_num
+        )
 
         if not torch.isfinite(loss):
             print('WARNING: non-finite loss, ending training ', loss)
@@ -168,8 +182,8 @@ def evaluate(model, data_loader, device, epoch):
         loss = loss_function(pred, labels.to(device))
         accu_loss += loss
 
-        data_loader.desc = "[valid epoch {}] loss: {:.3f}, acc: {:.3f}".format(epoch,
-                                                                               accu_loss.item() / (step + 1),
-                                                                               accu_num.item() / sample_num)
+        data_loader.desc = "[valid epoch {}] loss: {:.3f}, acc: {:.3f}".format(
+            epoch, accu_loss.item() / (step + 1), accu_num.item() / sample_num
+        )
 
     return accu_loss.item() / (step + 1), accu_num.item() / sample_num

@@ -37,7 +37,9 @@ def parse_xml_to_dict(xml):
 
 def write_classIndices(category_set):
     class_indices = dict((k, v) for v, k in enumerate(category_set))
-    json_str = json.dumps(dict((val, key) for key, val in class_indices.items()), indent=4)
+    json_str = json.dumps(
+        dict((val, key) for key, val in class_indices.items()), indent=4
+    )
     with open('class_indices.json', 'w') as json_file:
         json_file.write(json_str)
 
@@ -45,8 +47,8 @@ def write_classIndices(category_set):
 def xyxy2xywhn(bbox, size):
     bbox = list(map(float, bbox))
     size = list(map(float, size))
-    xc = (bbox[0] + (bbox[2] - bbox[0]) / 2.) / size[0]
-    yc = (bbox[1] + (bbox[3] - bbox[1]) / 2.) / size[1]
+    xc = (bbox[0] + (bbox[2] - bbox[0]) / 2.0) / size[0]
+    yc = (bbox[1] + (bbox[3] - bbox[1]) / 2.0) / size[1]
     wn = (bbox[2] - bbox[0]) / size[0]
     hn = (bbox[3] - bbox[1]) / size[1]
     return (xc, yc, wn, hn)
@@ -82,7 +84,11 @@ def parseXmlFilse(voc_dir, save_dir):
         shutil.rmtree(save_dir)
     os.makedirs(save_dir)
 
-    xml_files = [os.path.join(voc_dir, i) for i in os.listdir(voc_dir) if os.path.splitext(i)[-1] == '.xml']
+    xml_files = [
+        os.path.join(voc_dir, i)
+        for i in os.listdir(voc_dir)
+        if os.path.splitext(i)[-1] == '.xml'
+    ]
     for xml_file in xml_files:
         with open(xml_file) as fid:
             xml_str = fid.read()
@@ -102,14 +108,21 @@ def parseXmlFilse(voc_dir, save_dir):
             xml_str = fid.read()
         xml = etree.fromstring(xml_str)
         info_dict = parse_xml_to_dict(xml)
-        filename, objects = parser_info(info_dict, only_cat=False, class_indices=class_indices)
+        filename, objects = parser_info(
+            info_dict, only_cat=False, class_indices=class_indices
+        )
         if len(objects) != 0:
             global bbox_nums
             bbox_nums += len(objects)
-            with open(save_dir + "/" + filename.split(".")[0] + ".txt", 'w') as f:
+            with open(
+                save_dir + "/" + filename.split(".")[0] + ".txt", 'w'
+            ) as f:
                 for obj in objects:
                     f.write(
-                        "{} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(obj[0], obj[1][0], obj[1][1], obj[1][2], obj[1][3]))
+                        "{} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(
+                            obj[0], obj[1][0], obj[1][1], obj[1][2], obj[1][3]
+                        )
+                    )
 
 
 if __name__ == '__main__':

@@ -81,8 +81,8 @@ def addAnnoItem(object_name, image_id, category_id, bbox):
 def xywhn2xywh(bbox, size):
     bbox = list(map(float, bbox))
     size = list(map(float, size))
-    xmin = (bbox[0] - bbox[2] / 2.) * size[1]
-    ymin = (bbox[1] - bbox[3] / 2.) * size[0]
+    xmin = (bbox[0] - bbox[2] / 2.0) * size[1]
+    ymin = (bbox[1] - bbox[3] / 2.0) * size[0]
     w = bbox[2] * size[1]
     h = bbox[3] * size[0]
     box = (xmin, ymin, w, h)
@@ -90,8 +90,12 @@ def xywhn2xywh(bbox, size):
 
 
 def parseXmlFilse(image_path, anno_path, save_path, json_name='train.json'):
-    assert os.path.exists(image_path), "ERROR {} dose not exists".format(image_path)
-    assert os.path.exists(anno_path), "ERROR {} dose not exists".format(anno_path)
+    assert os.path.exists(image_path), "ERROR {} dose not exists".format(
+        image_path
+    )
+    assert os.path.exists(anno_path), "ERROR {} dose not exists".format(
+        anno_path
+    )
     if os.path.exists(save_path):
         shutil.rmtree(save_path)
     os.makedirs(save_path)
@@ -106,9 +110,14 @@ def parseXmlFilse(image_path, anno_path, save_path, json_name='train.json'):
 
     images = [os.path.join(image_path, i) for i in os.listdir(image_path)]
     files = [os.path.join(anno_path, i) for i in os.listdir(anno_path)]
-    images_index = dict((v.split(os.sep)[-1][:-4], k) for k, v in enumerate(images))
+    images_index = dict(
+        (v.split(os.sep)[-1][:-4], k) for k, v in enumerate(images)
+    )
     for file in files:
-        if os.path.splitext(file)[-1] != '.txt' or 'classes' in file.split(os.sep)[-1]:
+        if (
+            os.path.splitext(file)[-1] != '.txt'
+            or 'classes' in file.split(os.sep)[-1]
+        ):
             continue
         if file.split(os.sep)[-1][:-4] in images_index:
             index = images_index[file.split(os.sep)[-1][:-4]]
@@ -143,8 +152,20 @@ if __name__ == '__main__':
         json_name:json文件名字
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-ap', '--anno-path', type=str, default='./data/labels/yolo', help='yolo txt path')
-    parser.add_argument('-s', '--save-path', type=str, default='./data/convert/coco', help='json save path')
+    parser.add_argument(
+        '-ap',
+        '--anno-path',
+        type=str,
+        default='./data/labels/yolo',
+        help='yolo txt path',
+    )
+    parser.add_argument(
+        '-s',
+        '--save-path',
+        type=str,
+        default='./data/convert/coco',
+        help='json save path',
+    )
     parser.add_argument('--image-path', default='./data/images')
     parser.add_argument('--json-name', default='train.json')
 

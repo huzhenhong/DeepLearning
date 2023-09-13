@@ -51,7 +51,7 @@ _C.MODEL.LABEL_SMOOTHING = 0.1
 
 # GOOGLENET parameters
 _C.MODEL.GOOGLENET = CN()
-_C.MODEL.GOOGLENET.AUX_LOGITS= True
+_C.MODEL.GOOGLENET.AUX_LOGITS = True
 _C.MODEL.GOOGLENET.TRANSFORM_INPUTS = True
 _C.MODEL.GOOGLENET.INIT_WEIGHTS = True
 
@@ -199,7 +199,9 @@ def update_config(config, args):
     if args.accumulation_steps:
         config.TRAIN.ACCUMULATION_STEPS = args.accumulation_steps
     if args.amp_opt_level:
-        print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
+        print(
+            "[warning] Apex amp has been deprecated, please use pytorch amp instead!"
+        )
         if args.amp_opt_level == 'O0':
             config.AMP_ENABLE = False
     if args.disable_amp:

@@ -11,7 +11,12 @@ import glob
 IMG_FORMATS = ["jpg", "png", "jpeg"]
 
 
-def data_preprocessing(file_path, size=(224, 224), mean=[0.406, 0.456, 0.485], std=[0.225, 0.224, 0.229]):
+def data_preprocessing(
+    file_path,
+    size=(224, 224),
+    mean=[0.406, 0.456, 0.485],
+    std=[0.225, 0.224, 0.229],
+):
     # H W C BGR
     img = cv2.imread(file_path)
     # RESIZE
@@ -21,7 +26,7 @@ def data_preprocessing(file_path, size=(224, 224), mean=[0.406, 0.456, 0.485], s
     # Normalization
     mean = np.array(mean).astype(np.float32)
     std = np.array(std).astype(np.float32)
-    img = (img / 255. - mean) / std
+    img = (img / 255.0 - mean) / std
     # B H W C
     img = np.expand_dims(img, axis=0)
     # B H W C -> B C H W
@@ -48,7 +53,9 @@ def get_keypoints_preds(ort_output, img_size, thresh=0.6, max_kp=50):
     points_x = points % w
     points_y = np.floor(points / w)
 
-    output[:, :, :, 2] = ort_output[:, :, points_y.astype(np.int32), points_x.astype(np.int32)]
+    output[:, :, :, 2] = ort_output[
+        :, :, points_y.astype(np.int32), points_x.astype(np.int32)
+    ]
 
     points_y = points_y * img_size[0] / (h - 1)
     points_x = points_x * img_size[1] / (w - 1)
@@ -72,7 +79,7 @@ def draw_pic(image, points):
 def decode_image(image, mean, std):
     img = image.squeeze().transpose(1, 2, 0)
     # *std+mean * 255
-    img = (img * std + mean) * 255.
+    img = (img * std + mean) * 255.0
     # bgr->rgb
     img = img[:, :, ::-1]
     img = img.astype(np.uint8)
@@ -80,20 +87,22 @@ def decode_image(image, mean, std):
 
 
 def inference(
-        onnx_file,
-        data_source,
-        size=(448, 448),
-        mean=[0.406, 0.456, 0.485],
-        std=[0.225, 0.224, 0.229],
-        show_img=False,
-        cal_fps=True
+    onnx_file,
+    data_source,
+    size=(448, 448),
+    mean=[0.406, 0.456, 0.485],
+    std=[0.225, 0.224, 0.229],
+    show_img=False,
+    cal_fps=True,
 ):
     # Load onnx
     assert os.path.exists(onnx_file)
     ort_session = onnxruntime.InferenceSession(onnx_file)
 
     # Load img
-    assert os.path.exists(data_source), "data source: {} does not exists".format(data_source)
+    assert os.path.exists(
+        data_source
+    ), "data source: {} does not exists".format(data_source)
     if os.path.isdir(data_source):
         files = sorted(glob.glob(os.path.join(data_source, '*.*')))
     elif os.path.isfile(data_source):
@@ -112,14 +121,16 @@ def inference(
         if len(images) < num_warmup:
             images *= 100
 
-    for index, image_file in (enumerate(images)):
+    for index, image_file in enumerate(images):
         # torch.cuda.synchronize()
         image = data_preprocessing(image_file, size=size, mean=mean, std=std)
 
         t1 = time.perf_counter()
         ort_img = {'input': image}
         ort_output = ort_session.run(['output'], ort_img)[0]
-        out, _ = get_keypoints_preds(ort_output, img_size=size, thresh=0.65, max_kp=50)
+        out, _ = get_keypoints_preds(
+            ort_output, img_size=size, thresh=0.65, max_kp=50
+        )
         t2 = time.perf_counter()
         elapsed = t2 - t1
 
@@ -141,14 +152,16 @@ def inference(
                     f'Done image [{index + 1:<3}/ {len(images)}], '
                     f'fps: {fps:.1f} img / s, '
                     f'times per image: {1000 / fps:.1f} ms / img',
-                    flush=True)
+                    flush=True,
+                )
 
         if (index + 1) == len(images) and (index + 1) > num_warmup:
             fps = (index + 1 - num_warmup) / pure_inf_time
             print(
                 f'Overall fps: {fps:.1f} img / s, '
                 f'times per image: {1000 / fps:.1f} ms / img',
-                flush=True)
+                flush=True,
+            )
 
         print("time:{}".format(t2 - t1))
         # print(output)
@@ -156,9 +169,12 @@ def inference(
 
 def parser_args():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--onnx_file', type=str, default='model.onnx')
-    parser.add_argument('--data_source', type=str, default='000000.jpg')  # 测试数据源，可以是单张图片，可以是文件夹
+    parser.add_argument(
+        '--data_source', type=str, default='000000.jpg'
+    )  # 测试数据源，可以是单张图片，可以是文件夹
     parser.add_argument('--show_img', action='store_true', default=False)
     parser.add_argument('--cal_fps', action='store_true', default=False)
     return parser.parse_args()
@@ -182,5 +198,5 @@ if __name__ == '__main__':
         mean=[0.406, 0.456, 0.485],
         std=[0.225, 0.224, 0.229],
         show_img=args.show_img,
-        cal_fps=args.cal_fps
+        cal_fps=args.cal_fps,
     )

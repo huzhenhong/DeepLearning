@@ -8,7 +8,7 @@
 - JPEGImages：存放的是训练与测试的所有图片。
 - Annotations：里面存放的是每张图片打完标签所对应的XML文件。
 - ImageSets：ImageSets文件夹下本次讨论的只有Main文件夹，此文件夹中存放的主要又有四个文本文件test.txt,train.txt,trainval.txt,val.txt, 其中分别存放的是测试集图片的文件名、训练集图片的文件名、训练验证集图片的文件名、验证集图片的文件名。
-- SegmentationClass与SegmentationObject：存放的都是图片，且都是图像分割结果图，对目标检测任务来说没有用。class segmentation 标注出每一个像素的类别 
+- SegmentationClass与SegmentationObject：存放的都是图片，且都是图像分割结果图，对目标检测任务来说没有用。class segmentation 标注出每一个像素的类别
 - object segmentation 标注出每一个像素属于哪一个物体。
 
 ### XML标注格式
@@ -18,7 +18,7 @@
   <filename>77258.bmp</filename> # 图片名
   <path>~/frcnn-image/61/ADAS/image/frcnn-image/17/77258.bmp</path>
   <source>  #图片来源相关信息
-    <database>Unknown</database>  
+    <database>Unknown</database>
   </source>
   <size> #图片尺寸
     <width>640</width>
@@ -46,7 +46,7 @@
 <summary>COCO</summary>
 
 ### COCO数据集现在有3种标注类型：
-- object instances（目标实例） 
+- object instances（目标实例）
 - object keypoints（目标上的关键点）
 - image captions（看图说话）
 
@@ -75,8 +75,8 @@ license{
     "id": int,
     "name": str,
     "url": str,
-} 
-image{      # images是一个list,存放所有图片(dict)信息。image是一个dict,存放单张图片信息 
+}
+image{      # images是一个list,存放所有图片(dict)信息。image是一个dict,存放单张图片信息
     "id": int,                  # 图片的ID编号（每张图片ID唯一）
     "width": int,               # 图片宽
     "height": int,              # 图片高

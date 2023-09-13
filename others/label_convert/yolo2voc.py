@@ -22,14 +22,10 @@ def save_anno_to_xml(filename, size, objs, save_path):
         E.source(
             E.database("The VOC Database"),
             E.annotation("PASCAL VOC"),
-            E.image("flickr")
+            E.image("flickr"),
         ),
-        E.size(
-            E.width(size[1]),
-            E.height(size[0]),
-            E.depth(size[2])
-        ),
-        E.segmented(0)
+        E.size(E.width(size[1]), E.height(size[0]), E.depth(size[2])),
+        E.segmented(0),
     )
     for obj in objs:
         E2 = objectify.ElementMaker(annotate=False)
@@ -42,8 +38,8 @@ def save_anno_to_xml(filename, size, objs, save_path):
                 E.xmin(obj[1][0]),
                 E.ymin(obj[1][1]),
                 E.xmax(obj[1][2]),
-                E.ymax(obj[1][3])
-            )
+                E.ymax(obj[1][3]),
+            ),
         )
         anno_tree.append(anno_tree2)
     anno_path = os.path.join(save_path, filename[:-3] + "xml")
@@ -53,18 +49,22 @@ def save_anno_to_xml(filename, size, objs, save_path):
 def xywhn2xyxy(bbox, size):
     bbox = list(map(float, bbox))
     size = list(map(float, size))
-    xmin = (bbox[0] - bbox[2] / 2.) * size[1]
-    ymin = (bbox[1] - bbox[3] / 2.) * size[0]
-    xmax = (bbox[0] + bbox[2] / 2.) * size[1]
-    ymax = (bbox[1] + bbox[3] / 2.) * size[0]
+    xmin = (bbox[0] - bbox[2] / 2.0) * size[1]
+    ymin = (bbox[1] - bbox[3] / 2.0) * size[0]
+    xmax = (bbox[0] + bbox[2] / 2.0) * size[1]
+    ymax = (bbox[1] + bbox[3] / 2.0) * size[0]
     box = [xmin, ymin, xmax, ymax]
     return list(map(int, box))
 
 
 def parseXmlFilse(image_path, anno_path, save_path):
     global images_nums, category_nums, bbox_nums
-    assert os.path.exists(image_path), "ERROR {} dose not exists".format(image_path)
-    assert os.path.exists(anno_path), "ERROR {} dose not exists".format(anno_path)
+    assert os.path.exists(image_path), "ERROR {} dose not exists".format(
+        image_path
+    )
+    assert os.path.exists(anno_path), "ERROR {} dose not exists".format(
+        anno_path
+    )
     if os.path.exists(save_path):
         shutil.rmtree(save_path)
     os.makedirs(save_path)
@@ -78,11 +78,16 @@ def parseXmlFilse(image_path, anno_path, save_path):
 
     images = [os.path.join(image_path, i) for i in os.listdir(image_path)]
     files = [os.path.join(anno_path, i) for i in os.listdir(anno_path)]
-    images_index = dict((v.split(os.sep)[-1][:-4], k) for k, v in enumerate(images))
+    images_index = dict(
+        (v.split(os.sep)[-1][:-4], k) for k, v in enumerate(images)
+    )
     images_nums = len(images)
 
     for file in tqdm(files):
-        if os.path.splitext(file)[-1] != '.txt' or 'classes' in file.split(os.sep)[-1]:
+        if (
+            os.path.splitext(file)[-1] != '.txt'
+            or 'classes' in file.split(os.sep)[-1]
+        ):
             continue
         if file.split(os.sep)[-1][:-4] in images_index:
             index = images_index[file.split(os.sep)[-1][:-4]]
@@ -114,8 +119,20 @@ if __name__ == '__main__':
         image_path:图片路径
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-ap', '--anno-path', type=str, default='./data/labels/yolo', help='yolo txt path')
-    parser.add_argument('-s', '--save-path', type=str, default='./data/convert/voc', help='xml save path')
+    parser.add_argument(
+        '-ap',
+        '--anno-path',
+        type=str,
+        default='./data/labels/yolo',
+        help='yolo txt path',
+    )
+    parser.add_argument(
+        '-s',
+        '--save-path',
+        type=str,
+        default='./data/convert/voc',
+        help='xml save path',
+    )
     parser.add_argument('--image-path', default='./data/images')
 
     opt = parser.parse_args()
