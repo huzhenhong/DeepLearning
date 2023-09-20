@@ -1,0 +1,91 @@
+ 	person  人类# 1
+    vehicle 交通工具类 #8
+        bicycle
+         car
+         motorcycle
+         airplane
+         bus
+         train
+         truck
+         boat
+    outdoor  户外类#5
+        traffic light
+        fire hydrant
+        stop sign
+        parking meter
+        bench
+    animal  动物类#10
+        bird
+        cat
+        dog
+        horse
+        sheep
+        cow
+        elephant
+        bear
+        zebra
+        giraffe
+    accessory 饰品类 #5
+        backpack
+        umbrella
+        handbag
+        tie
+        suitcase
+    sports  运动类#10
+        frisbee
+        skis
+        snowboard
+        sports ball
+        kite
+        baseball bat
+        baseball glove
+        skateboard
+        surfboard
+        tennis racket
+    kitchen 厨房类 #7
+        bottle
+        wine glass
+        cup
+        fork
+        knife
+        spoon
+        bowl
+    food  食物类#10
+        banana
+        apple
+        sandwich
+        orange
+        broccoli
+        carrot
+        hot dog
+        pizza
+        donut
+        cake
+    furniture 家具类#6
+        chair
+        couch
+        potted plant
+        bed
+        dining table
+        toilet
+    electronic 电子产品类 #6
+        tv
+        laptop
+        mouse
+        remote
+        keyboard
+        cell phone
+    appliance 家用电器类 #5
+        microwave
+        oven
+        toaster
+        sink
+        refrigerator
+    indoor 室内类 #7
+        book
+        clock
+        vase
+        scissors
+        teddy bear
+        hair drier
+        toothbrush

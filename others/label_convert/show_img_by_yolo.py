@@ -96,7 +96,9 @@ def draw_box(img, objects, draw=True):
     return img
 
 
-def show_image(image_path, anno_path, show=False, plot_image=False):
+def show_image(
+    image_path, anno_path, label_ids=[], show=False, plot_image=False
+):
     assert os.path.exists(image_path), "image path:{} dose not exists".format(
         image_path
     )
@@ -113,9 +115,11 @@ def show_image(image_path, anno_path, show=False, plot_image=False):
     with open(anno_path + "/classes.txt", 'r') as f:
         classes = f.readlines()
 
-    category_id = dict((k, v.strip()) for k, v in enumerate(classes))
+    category_id = dict((k + 1, v.strip()) for k, v in enumerate(classes))
 
-    for txt_file in tqdm(anno_file_list):
+    for file in tqdm(os.listdir(anno_path)):
+        txt_file = os.path.join(anno_path, file)
+        # for txt_file in tqdm(anno_file_list):
         if not txt_file.endswith('.txt') or 'classes' in txt_file:
             continue
         filename = txt_file.split(os.sep)[-1][:-3] + "jpg"
@@ -123,23 +127,34 @@ def show_image(image_path, anno_path, show=False, plot_image=False):
         file_path = os.path.join(image_path, filename)
         if not os.path.exists(file_path):
             continue
-
-        img = cv2.imread(file_path)
-        if img is None:
-            continue
-        width = img.shape[1]
-        height = img.shape[0]
+        # assert os.path.exists(
+        #     file_path
+        # ), "image file: {} dose not exists".format(file_path)
 
         objects = []
+        img = None
         with open(txt_file, 'r') as fid:
             for line in fid.readlines():
                 line = line.strip().split()
+
+                # if len(label_ids) > 0 and int(line[0]) not in label_ids:
+                #     continue
+
+                if img is None:
+                    img = cv2.imread(file_path)
+
+                width = img.shape[1]
+                height = img.shape[0]
+
                 category_name = category_id[int(line[0])]
                 bbox = xywhn2xyxy(
                     (line[1], line[2], line[3], line[4]), (width, height)
                 )
                 obj = [category_name, bbox]
                 objects.append(obj)
+        # continue
+        if len(objects) == 0:
+            continue
 
         img = draw_box(img, objects, show)
         if show:
@@ -197,6 +212,12 @@ if __name__ == '__main__':
         help='annotation path',
     )
     parser.add_argument(
+        '-id',
+        '--pick_ids',
+        nargs='*',
+        help='pick show ids',
+    )
+    parser.add_argument(
         '-s', '--show', action='store_true', help='weather show img'
     )
     parser.add_argument('-p', '--plot-image', action='store_true')
@@ -204,11 +225,19 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1:
         print(opt)
-        show_image(opt.image_path, opt.anno_path, opt.show, opt.plot_image)
+        show_image(
+            opt.image_path,
+            opt.anno_path,
+            opt.pick_ids,
+            opt.show,
+            opt.plot_image,
+        )
     else:
         image_path = '/Users/huzh/Documents/数据集/Objects365-2019/images/val'
         anno_path = '/Users/huzh/Documents/数据集/Objects365-2019/labels/val'
-        show_image(image_path, anno_path, show=True, plot_image=True)
+        show_image(
+            image_path, anno_path, label_ids=[2], show=False, plot_image=True
+        )
         print(every_class_num)
         print("category nums: {}".format(len(category_set)))
         print("image nums: {}".format(len(image_set)))

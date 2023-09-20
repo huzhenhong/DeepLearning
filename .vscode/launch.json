@@ -1,0 +1,31 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                // "--src",
+                // "/Users/huzh/Documents/数据集/Objects365-2019/",
+                // "--dst",
+                // "picked",
+                // "--src_id",
+                // // "3",
+                // // "22",
+                // "2",
+                // "--dst_id",
+                // "0",
+                // "--type",
+                // "val",
+                // // "--draw_bbox"
+            ]
+        }
+    ]
+}

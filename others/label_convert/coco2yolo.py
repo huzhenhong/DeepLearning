@@ -4,6 +4,7 @@ import shutil
 from tqdm import tqdm
 import sys
 import argparse
+import cv2 as cv
 
 images_nums = 0
 category_nums = 0
@@ -48,9 +49,11 @@ def load_coco(anno_file, xml_save_path):
     classes = catid2name(coco)
     imgIds = coco.getImgIds()
     classesIds = coco.getCatIds()
+    classesIds.sort(reverse=False)
 
-    with open(os.path.join(xml_save_path, "classes.txt"), 'w') as f:
+    with open(os.path.join(xml_save_path, "..", "classes.txt"), 'w') as f:
         for id in classesIds:
+            print(id)
             f.write("{}\n".format(classes[id]))
 
     for imgId in tqdm(imgIds):
@@ -75,6 +78,13 @@ def load_coco(anno_file, xml_save_path):
             h = bbox[3]
             obj = [ann['category_id'], xc, yc, w, h]
             objs.append(obj)
+
+            # bbox = list(map(int, bbox))
+            # if classes[ann['category_id']] == 'sneakers':
+            #     img = cv.imread(os.path.join("/Users/huzh/Documents/数据集/Objects365-2019/images/val", filename))
+            #     cv.rectangle(img, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), (0, 255, 0), 2)
+            #     cv.imshow(object_name, img)
+            #     cv.waitKey()
         info['objects'] = objs
         save_anno_to_txt(info, xml_save_path)
 
@@ -126,8 +136,8 @@ if __name__ == '__main__':
         # print("category nums: {}".format(category_nums))
         # print("bbox nums: {}".format(bbox_nums))
     else:
-        json_path = '/Users/huzh/Documents/数据集/Objects365-2019-zip/Annotations/val/val.json'  # r'D:\practice\compete\goodsDec\data\train\train.json'
-        txt_save_path = '/Users/huzh/Documents/数据集/Objects365-2019/labels/val'
+        json_path = '/Users/huzh/Documents/数据集/Objects365-2019-zip/Annotations/train/train.json'  # r'D:\practice\compete\goodsDec\data\train\train.json'
+        txt_save_path = '/Users/huzh/Documents/数据集/Objects365-2019/labels/train'
         parseJsonFile(json_path, txt_save_path)
         # print("image nums: {}".format(images_nums))
         # print("category nums: {}".format(category_nums))
