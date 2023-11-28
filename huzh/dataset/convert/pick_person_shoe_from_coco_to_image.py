@@ -58,10 +58,11 @@ def clip_coords(boxes, shape):
 def pick_one_label(one_img_anns, label, area, wh_ratio):
     one_label_bbox = []
     for ann in one_img_anns:
-        if ann['area'] > area and label == ann['category_id']:
+        # if ann['area'] > area and label == ann['category_id']:
+        if label == ann['category_id']:
             bbox = list(map(int, ann['bbox']))  # bbox:[x,y,w,h]
-            if 1.0 * bbox[2] / bbox[3] > wh_ratio:
-                continue
+            # if 1.0 * bbox[2] / bbox[3] > wh_ratio:
+            #     continue
             x1 = bbox[0]
             y1 = bbox[1]
             x2 = bbox[0] + bbox[2]

@@ -68,7 +68,7 @@ def main(args):
         with open(labelfile_path, 'r') as f:
             lines = f.readlines()
             for line in lines:
-                if int(line[0]) != 0:
+                if int(line[0]) != 0: # 自定义标签
                     shutil.move(
                         labelfile_path, os.path.join(out_labels_path, labelfile)
                     )
