@@ -6,8 +6,10 @@ import cv2 as cv
 sys.path.append('..')
 from base.utils import get_video_info, get_specify_files
 
-# from light_switch.detect import detect
-from goods_move.post_process import process as detect
+from light_switch.detect import detect
+
+# from pick_color.color_inrange import detect
+# from goods_move.post_process import process as detect
 
 
 def parse_argument():
@@ -107,7 +109,7 @@ def main(args):
         os.makedirs(args.output_path)
 
     image_suffixes = ['.jpg', 'jpeg', '.bmp', '.png']
-    video_suffixes = ['.mp4', '.avi', '.flv', '.h264']
+    video_suffixes = ['.mp4', '.avi', '.flv', '.h264', '.ts']
 
     image_path = get_specify_files(args.input_path, image_suffixes)
     video_path = get_specify_files(args.input_path, video_suffixes)

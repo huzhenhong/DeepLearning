@@ -3,14 +3,17 @@ import cv2 as cv
 
 
 def get_all_files(root_path):
-    all_file_path = []
-    for it in os.listdir(root_path):
-        current_path = os.path.join(root_path, it)
-        if os.path.isdir(current_path):
-            all_file_path.extend(get_all_files(current_path))
-        elif os.path.isfile(current_path):
-            all_file_path.append(current_path)
-    return all_file_path
+    if os.path.isfile(root_path):
+        return [root_path]
+    else:
+        all_file_path = []
+        for it in os.listdir(root_path):
+            current_path = os.path.join(root_path, it)
+            if os.path.isdir(current_path):
+                all_file_path.extend(get_all_files(current_path))
+            elif os.path.isfile(current_path):
+                all_file_path.append(current_path)
+        return all_file_path
 
 
 def get_video_info(vd_reader):

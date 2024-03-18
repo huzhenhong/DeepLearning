@@ -1,8 +1,9 @@
-
 import cv2 as cv
 
 
 def process(im, mask):
+    light = cv.bitwise_and(im, im, mask=mask)
+    cv.imshow('light_final', light)
     mean = cv.mean(im, mask=mask)
     print("mean: ", sum(mean))
     # minmax_b = cv.minMaxLoc(im, mask=mask)
@@ -21,7 +22,8 @@ def process(im, mask):
 
     print(f'{mean_b} {mean_g} {mean_r} - {minmax_b} {minmax_g} {minmax_r}')
 
-    if mean_r > 190 and minmax_r > 250:
+    # if mean_r > 190 and minmax_r > 250:
+    if int(sum(mean)) > 300:
         return 'ON'
         # cv.putText(im, 'on', (roi[0], roi[1]), cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
     else:

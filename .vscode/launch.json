@@ -12,20 +12,27 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                // "--src",
-                // "/Users/huzh/Documents/数据集/Objects365-2019/",
-                // "--dst",
-                // "picked",
-                // "--src_id",
-                // // "3",
-                // // "22",
-                // "2",
-                // "--dst_id",
-                // "0",
-                // "--type",
-                // "val",
-                // // "--draw_bbox"
-            ]
+                "--i",
+                // "/Users/huzh/Documents/project/中车/指示灯开关检测/20231114/局放控制台灯20231109",
+                // "/Users/huzh/Documents/project/中车/指示灯开关检测/20231114/局放控制台灯20231109/灯亮",
+                // "/Users/huzh/Documents/project/中车/指示灯开关检测/20231114/局放控制台灯20231109/灯灭",
+                // "/Users/huzh/Documents/project/中车/指示灯开关检测/20231114/局放控制台灯20231109/light",
+                // "/Users/huzh/Documents/algorithm/物品搬移/test_img/物品搬移/泉州移动/20231124",
+                // "/Users/huzh/Documents/project/银光/消防通道/image",
+                // "/Users/huzh/Documents/algorithm/指示灯开关检测/20231205/中车长客-操作台灯亮灯灭素材",
+                // "/Users/huzh/Documents/algorithm/指示灯开关检测/灯亮误报素材",
+                // "/Users/huzh/Documents/algorithm/指示灯开关检测/20231205/中车长客-操作台灯亮灯灭素材",
+                // "/Users/huzh/Documents/algorithm/指示灯开关检测/20231208",
+                // "/Users/huzh/Documents/algorithm/指示灯开关检测/20231114/局放控制台灯20231109/灯灭",
+                // "/Users/huzh/Documents/algorithm/指示灯开关检测/20231214/新建文件夹",
+                "/Users/huzh/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/f2ce00da78b50118d8f5629e6c6d8b80/Message/MessageTemp/3b405ba24500d68534b09b3a58f1a67e/File/未命名文件夹",
+                // "/Users/huzh/Documents/algorithm/指示灯开关检测/20231205/off",
+                // "/Users/huzh/Documents/algorithm/物品搬移/test_img/物品搬移/智翔航空/img",
+                // "/Users/huzh/Documents/project/银光/消防通道/943",
+                "--o",
+                "debug_output",
+            ],
+            "cwd": "${fileDirname}"
         }
     ]
 }

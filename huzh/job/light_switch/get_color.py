@@ -17,7 +17,6 @@ import numpy as np
 from pathlib import Path
 
 
-
 def process(im):
     hsv = cv.cvtColor(im, cv.COLOR_BGR2HSV)
 
@@ -29,6 +28,20 @@ def process(im):
     red_upper = np.array([180, 255, 255])
     mask2 = cv.inRange(hsv, lowerb=red_lower, upperb=red_upper)
 
+    red_lower = np.array([11, 43, 46])
+    red_upper = np.array([25, 255, 255])
+    mask3 = cv.inRange(hsv, lowerb=red_lower, upperb=red_upper)
+
+    red_lower = np.array([26, 43, 46])
+    red_upper = np.array([34, 255, 255])
+    mask4 = cv.inRange(hsv, lowerb=red_lower, upperb=red_upper)
+
     mask = cv.bitwise_or(mask1, mask2)
+    mask = cv.bitwise_or(mask, mask3)
+    mask = cv.bitwise_or(mask, mask4)
+
+    kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+    # mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel=kernel)
+    mask = cv.erode(mask, kernel=kernel)
     cv.imshow('inRange', mask)
     return mask
