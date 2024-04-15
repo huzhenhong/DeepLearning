@@ -28,9 +28,10 @@ def get_video_info(vd_reader):
 def get_specify_files(
     input_path,
     suffixes=None,
+    is_relative_path=False
 ):
     return [
-        it
+        os.path.relpath(it, input_path) if is_relative_path else it
         for it in get_all_files(input_path)
         if os.path.splitext(it)[1] in suffixes
     ]
